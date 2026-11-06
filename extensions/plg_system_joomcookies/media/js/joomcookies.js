@@ -13,6 +13,8 @@
   var overlay;
   var lastFocus = null;
   var loadedKeys = Object.create(null);
+  var scriptActivationRunning = false;
+  var scriptActivationPending = false;
   var youtubeBusy = false;
   var youtubeQueued = null;
   var youtubeObserver = null;
@@ -225,19 +227,28 @@
   }
 
   function adaptYoothemeLoadQueue() {
-    if (typeof window.$load !== 'function' || (window.$load && window.$load.__jckAdapted)) {
+    if (typeof window.$load !== 'function' || window.$load.__jckAdapted) {
       return;
     }
     var run = window.$load;
-    var proxy = [];
+    if (typeof run.push === 'function') {
+      return;
+    }
+    // Preserve the original callable API, including existing properties.
+    var proxy = function () {
+      return run.apply(this, arguments);
+    };
+    Object.keys(run).forEach(function (key) {
+      proxy[key] = run[key];
+    });
     proxy.__jckAdapted = true;
     proxy.push = function (fn) {
       try {
-        run(fn);
+        return run(fn);
       } catch (err) {
         log('JoomCookies: YOOtheme $load callback skipped', err);
+        return 0;
       }
-      return 1;
     };
     window.$load = proxy;
   }
@@ -398,35 +409,61 @@
     if (categories.statistics) {
       adaptYoothemeLoadQueue();
     }
-    document.querySelectorAll('script[type="text/plain"][data-jck-managed="1"]').forEach(function (el) {
-      var category = el.getAttribute('data-jck-category');
-      if (!categories[category]) {
-        return;
-      }
-      var key = scriptKey(el);
-      if (el.getAttribute('data-jck-loaded') === '1' || loadedKeys[key]) {
-        return;
-      }
-      var script = document.createElement('script');
-      var originalType = el.getAttribute('data-jck-type') || 'text/javascript';
-      script.type = originalType;
-      Array.prototype.forEach.call(el.attributes, function (attr) {
-        if (attr.name === 'type' || attr.name.indexOf('data-jck') === 0) {
+    if (scriptActivationRunning) {
+      scriptActivationPending = true;
+      return;
+    }
+    scriptActivationRunning = true;
+    var nodes = Array.prototype.slice.call(document.querySelectorAll('script[type="text/plain"][data-jck-managed="1"]'));
+    var index = 0;
+
+    function advance() {
+      while (index < nodes.length) {
+        var el = nodes[index++];
+        var category = el.getAttribute('data-jck-category');
+        if (!currentCategories()[category]) {
+          continue;
+        }
+        var key = scriptKey(el);
+        if (el.getAttribute('data-jck-loaded') === '1' || loadedKeys[key] || !el.parentNode) {
+          continue;
+        }
+        var script = document.createElement('script');
+        script.type = el.getAttribute('data-jck-type') || 'text/javascript';
+        Array.prototype.forEach.call(el.attributes, function (attr) {
+          if (attr.name === 'type' || attr.name === 'async' || attr.name === 'defer' || attr.name.indexOf('data-jck') === 0) {
+            return;
+          }
+          script.setAttribute(attr.name, attr.value);
+        });
+        var src = el.getAttribute('data-jck-src');
+        if (src) {
+          // Dynamic scripts are async by default; load dependencies in document order.
+          script.async = false;
+          script.onload = advance;
+          script.onerror = function () {
+            log('JoomCookies: managed script failed to load', this.src);
+            advance();
+          };
+          script.src = src;
+        } else {
+          script.text = el.textContent || '';
+        }
+        el.setAttribute('data-jck-loaded', '1');
+        loadedKeys[key] = true;
+        el.parentNode.insertBefore(script, el.nextSibling);
+        log('JoomCookies: activated script', category, src || '[inline]');
+        if (src) {
           return;
         }
-        script.setAttribute(attr.name, attr.value);
-      });
-      var src = el.getAttribute('data-jck-src');
-      if (src) {
-        script.src = src;
-      } else {
-        script.text = el.textContent || '';
       }
-      el.setAttribute('data-jck-loaded', '1');
-      loadedKeys[key] = true;
-      el.parentNode.insertBefore(script, el.nextSibling);
-      log('JoomCookies: activated script', category, src || '[inline]');
-    });
+      scriptActivationRunning = false;
+      if (scriptActivationPending) {
+        scriptActivationPending = false;
+        activateScripts(currentCategories());
+      }
+    }
+    advance();
   }
 
   function withoutAutoplay(src) {
@@ -673,7 +710,8 @@
     if (!node) {
       return;
     }
-    if (isYoutubeEmbed(node) && !currentCategories().embeds) {
+    var category = node.getAttribute('data-jck-category') || 'embeds';
+    if (!currentCategories()[category]) {
       openPreferences();
       return;
     }

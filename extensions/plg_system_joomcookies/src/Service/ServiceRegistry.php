@@ -24,7 +24,8 @@ final class ServiceRegistry
      */
     public function __construct(array $configured = [])
     {
-        $this->services = array_merge(self::builtIn(), $this->normalize($configured));
+        // Site-approved rules override generic signatures.
+        $this->services = array_merge($this->normalize($configured), self::builtIn());
     }
 
     /**
@@ -208,6 +209,10 @@ final class ServiceRegistry
             ['id' => 'doubleclick', 'name' => 'DoubleClick', 'category' => ConsentState::CATEGORY_MARKETING, 'match_type' => 'domain', 'match_value' => 'doubleclick.net', 'cookies' => ''],
             ['id' => 'googleads', 'name' => 'Google Ads', 'category' => ConsentState::CATEGORY_MARKETING, 'match_type' => 'domain', 'match_value' => 'googleadservices.com', 'cookies' => ''],
             ['id' => 'adsense', 'name' => 'Google AdSense', 'category' => ConsentState::CATEGORY_MARKETING, 'match_type' => 'domain', 'match_value' => 'googlesyndication.com', 'cookies' => ''],
+            // Consent-managed anti-bot assets; local adapters must also be held.
+            ['id' => 'recaptcha-api', 'name' => 'Google reCAPTCHA API', 'category' => ConsentState::CATEGORY_EMBEDS, 'match_type' => 'url_contains', 'match_value' => '/recaptcha/api.js', 'cookies' => ''],
+            ['id' => 'recaptcha-gstatic', 'name' => 'Google reCAPTCHA runtime', 'category' => ConsentState::CATEGORY_EMBEDS, 'match_type' => 'url_contains', 'match_value' => 'gstatic.com/recaptcha/', 'cookies' => ''],
+            ['id' => 'recaptcha-convertforms', 'name' => 'Convert Forms reCAPTCHA v3', 'category' => ConsentState::CATEGORY_EMBEDS, 'match_type' => 'url_contains', 'match_value' => 'com_convertforms/js/recaptcha_v3.js', 'cookies' => ''],
             ['id' => 'youtube', 'name' => 'YouTube', 'category' => ConsentState::CATEGORY_EMBEDS, 'match_type' => 'domain', 'match_value' => 'youtube.com', 'cookies' => ''],
             ['id' => 'youtube-nocookie', 'name' => 'YouTube nocookie', 'category' => ConsentState::CATEGORY_EMBEDS, 'match_type' => 'domain', 'match_value' => 'youtube-nocookie.com', 'cookies' => ''],
             ['id' => 'youtu-be', 'name' => 'YouTube short', 'category' => ConsentState::CATEGORY_EMBEDS, 'match_type' => 'domain', 'match_value' => 'youtu.be', 'cookies' => ''],

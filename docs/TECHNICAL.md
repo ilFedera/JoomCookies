@@ -50,7 +50,7 @@ Google Analytics: vedi `docs/ANALYTICS.md` (blocco preventivo YOOtheme/gtag, Con
 
 ## Registro servizi
 
-Il catalogo incorporato copre, tra gli altri: Google Tag Manager, Google Analytics, gtag.js, loader YOOtheme `theme-analytics`, gtag inline, Hotjar, Meta Pixel, DoubleClick, Ads, AdSense, YouTube, youtube-nocookie, Vimeo, Google Maps, Instagram, TikTok, Google reCAPTCHA. Lo scanner classifica reCAPTCHA; il plugin **non** lo blocca (è necessario).
+Il catalogo incorporato copre, tra gli altri: Google Tag Manager, Google Analytics, gtag.js, loader YOOtheme `theme-analytics`, gtag inline, Hotjar, Meta Pixel, DoubleClick, Ads, AdSense, YouTube, youtube-nocookie, Vimeo, Google Maps, Instagram, TikTok, Google reCAPTCHA. Lo scanner rileva reCAPTCHA; il plugin ora blocca preventivamente i JS riconosciuti di Google reCAPTCHA e l'adapter di Convert Forms nella categoria `embeds`. Il modulo può richiedere il consenso ai contenuti esterni prima dell'invio: verificare accessibilità e invio reale, senza presumere che reCAPTCHA sia sempre strettamente necessario.
 
 L'amministratore può aggiungere regole:
 
@@ -120,3 +120,10 @@ Metodi di scoperta:
 Ogni URL considerato è scritto in `#__joomcookies_scan_urls` e resta consultabile dopo il completamento. La scansione rapida può terminare per limite di pagine con coda ancora piena; quella completa termina quando la coda è vuota.
 
 Un worker Playwright non è incluso e non deve girare nella richiesta PHP dell’hosting condiviso.
+
+## Interventi in sviluppo successivi alla 2.2.9
+
+- Regole per Google reCAPTCHA e l'adapter reCAPTCHA v3 di Convert Forms, con precedenza alle regole approvate dall'amministratore.
+- Attivazione dei JS gestiti in sequenza e proxy YOOtheme `$load` ancora invocabile.
+- Il click sui placeholder iframe generici non aggira più il consenso.
+- **Non è una soluzione universale verificata:** lo scanner PHP non osserva cookie JavaScript, né può garantire il blocco di tutti gli script dinamici. Servono test browser e analisi dei servizi non censiti prima di dichiarare conformità.

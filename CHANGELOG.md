@@ -1,5 +1,13 @@
 # Changelog
 
+## In sviluppo dopo 2.2.9 — non ancora rilasciato
+
+- Riconoscimento/blocco di Google reCAPTCHA e Convert Forms nella categoria contenuti esterni.
+- Script autorizzati riattivati in ordine, con attesa delle dipendenze esterne e compatibilità callable `$load` YOOtheme.
+- Blocco dei pulsanti di caricamento degli iframe generici prima del consenso.
+- Restano da verificare in browser attivazione GA, invio Convert Forms e copertura generale.
+
+
 ## 2.2.9 — 2026-11-06
 
 - URL non HTTP (`viber:`, `tel:`, `mailto:`, …) esclusi prima della normalizzazione; non diventano percorsi del sito.

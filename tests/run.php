@@ -151,7 +151,11 @@ $yooMedia = '/media/templates/site/yootheme/vendor/yootheme/theme-analytics/app/
 $yooHit = $registry->matchScript($yooSrc, '');
 assertTrue($yooHit !== null && $yooHit['id'] === 'yootheme-analytics', 'YOOtheme analytics URL is classified as statistics');
 assertTrue($registry->matchScript($yooMedia, '')['id'] === 'yootheme-analytics', 'YOOtheme analytics under media/templates is classified');
-assertTrue($registry->matchScript('https://www.google.com/recaptcha/api.js', '') === null, 'reCAPTCHA is not in the analytics catalogue');
+assertTrue($registry->matchScript('https://www.google.com/recaptcha/api.js', '')['category'] === 'embeds', 'reCAPTCHA API is consent-managed');
+assertTrue($registry->matchScript('https://www.gstatic.com/recaptcha/releases/test/recaptcha__it.js', '')['category'] === 'embeds', 'reCAPTCHA runtime is consent-managed');
+assertTrue($registry->matchScript('/media/com_convertforms/js/recaptcha_v3.js?123', '')['category'] === 'embeds', 'Convert Forms reCAPTCHA adapter is consent-managed');
+$siteOverride = new ServiceRegistry([['id' => 'custom-captcha', 'name' => 'Override', 'category' => 'marketing', 'match_type' => 'url_contains', 'match_value' => '/recaptcha/api.js', 'cookies' => '']]);
+assertTrue($siteOverride->matchScript('https://www.google.com/recaptcha/api.js', '')['id'] === 'custom-captcha', 'Approved site rule takes precedence');
 assertTrue($registry->matchScript('/media/templates/site/cassiopeia/js/template.min.js', '') === null, 'Ordinary template JS is not classified');
 
 $yooPage = <<<HTML
@@ -167,7 +171,9 @@ $yooBlocked = $guard->process($yooPage);
 assertTrue(str_contains($yooBlocked, 'data-jck-src="' . $yooSrc . '"') && str_contains($yooBlocked, 'data-jck-service="yootheme-analytics"'), 'YOOtheme analytics.min.js is prior-blocked');
 assertTrue(str_contains($yooBlocked, 'data-jck-src="' . $yooMedia . '"'), 'theme-analytics in media/templates is prior-blocked');
 assertTrue(preg_match('#<script src="/media/templates/site/cassiopeia/js/template.min.js"></script>#', $yooBlocked) === 1, 'Unrelated template JS stays executable');
-assertTrue(str_contains($yooBlocked, 'https://www.google.com/recaptcha/api.js') && !str_contains($yooBlocked, 'data-jck-src="https://www.google.com/recaptcha/api.js"'), 'reCAPTCHA is not blocked');
+assertTrue(str_contains($yooBlocked, 'data-jck-src="https://www.google.com/recaptcha/api.js"') && str_contains($yooBlocked, 'data-jck-service="recaptcha-api"'), 'reCAPTCHA blocked before consent');
+$convertFormsBlocked = $guard->process('<script src="/media/com_convertforms/js/recaptcha_v3.js?abc"></script>');
+assertTrue(str_contains($convertFormsBlocked, 'data-jck-service="recaptcha-convertforms"') && str_contains($convertFormsBlocked, 'type="text/plain"'), 'Convert Forms reCAPTCHA adapter blocked');
 assertTrue(str_contains($yooBlocked, 'data-jck-category="statistics"') && str_contains($yooBlocked, 'googletagmanager.com/gtag/js'), 'Inline gtag/js loader is blocked');
 assertTrue(!preg_match('#<script src="' . preg_quote($yooSrc, '#') . '"></script>#', $yooBlocked), 'YOOtheme analytics src is not left executable');
 
