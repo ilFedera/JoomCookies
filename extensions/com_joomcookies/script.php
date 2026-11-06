@@ -12,6 +12,7 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\Installer\InstallerAdapter;
 use Joomla\CMS\Installer\InstallerScriptInterface;
 use Joomla\CMS\Language\Text;
+use Joomla\Database\DatabaseInterface;
 
 class Com_JoomcookiesInstallerScript implements InstallerScriptInterface
 {
@@ -54,13 +55,50 @@ class Com_JoomcookiesInstallerScript implements InstallerScriptInterface
     {
         if (\in_array($type, ['install', 'update', 'discover_install'], true)) {
             try {
+                $this->seedCategories();
                 PluginMigrator::run(false);
             } catch (\Throwable) {
-                // Migration is retried from the dashboard.
+                // Seeding/migration can be retried from the dashboard.
             }
         }
 
         return true;
+    }
+
+    private function seedCategories(): void
+    {
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+        $defaults = [
+            ['necessary', 'Necessary', 'Required for the site to work, including storage of this consent choice.', 1, 1],
+            ['statistics', 'Statistics', 'Measurement tools. Off until accepted.', 0, 2],
+            ['marketing', 'Marketing', 'Advertising and similar tools. Off until accepted.', 0, 3],
+            ['embeds', 'External content', 'Videos, maps and embeds. Off until accepted.', 0, 4],
+        ];
+
+        foreach ($defaults as [$alias, $title, $description, $required, $ordering]) {
+            $query = $db->getQuery(true)
+                ->select('COUNT(*)')
+                ->from($db->quoteName('#__joomcookies_categories'))
+                ->where($db->quoteName('alias') . ' = ' . $db->quote($alias));
+            $db->setQuery($query);
+
+            if ((int) $db->loadResult() > 0) {
+                continue;
+            }
+
+            $query = $db->getQuery(true)
+                ->insert($db->quoteName('#__joomcookies_categories'))
+                ->columns(['alias', 'title', 'description', 'required', 'ordering', 'published'])
+                ->values(implode(',', [
+                    $db->quote($alias),
+                    $db->quote($title),
+                    $db->quote($description),
+                    (int) $required,
+                    (int) $ordering,
+                    1,
+                ]));
+            $db->setQuery($query)->execute();
+        }
     }
 }
 

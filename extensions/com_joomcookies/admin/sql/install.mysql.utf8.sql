@@ -91,9 +91,3 @@ CREATE TABLE IF NOT EXISTS `#__joomcookies_logs` (
   PRIMARY KEY (`id`),
   KEY `idx_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `#__joomcookies_categories` (`alias`,`title`,`description`,`required`,`ordering`,`published`) VALUES
-('necessary','Necessary','Required for the site to work, including storage of this consent choice.',1,1,1),
-('statistics','Statistics','Measurement tools. Off until accepted.',0,2,1),
-('marketing','Marketing','Advertising and similar tools. Off until accepted.',0,3,1),
-('embeds','External content','Videos, maps and embeds. Off until accepted.',0,4,1);

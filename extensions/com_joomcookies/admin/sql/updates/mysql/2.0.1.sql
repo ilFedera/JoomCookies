@@ -1,0 +1,1 @@
+-- 2.0.1: category seed moved to the installer script so reinstall/update does not duplicate aliases.

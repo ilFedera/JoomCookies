@@ -16,6 +16,9 @@ use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\UnavailableBrow
 use JoomCookies\Plugin\System\Joomcookies\Service\HtmlGuard;
 use JoomCookies\Plugin\System\Joomcookies\Service\ServiceRegistry;
 
+$installSql = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/sql/install.mysql.utf8.sql') ?: '';
+assertTrue(!str_contains($installSql, "INSERT INTO `#__joomcookies_categories`"), 'Install SQL does not seed categories (avoids duplicate alias)');
+
 $guard = new SsrfGuard(['example.test'], false);
 assertTrue($guard->assertSafe('https://example.test/page') === 'https://example.test/page', 'Allowed host passes SSRF guard');
 

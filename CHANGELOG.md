@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1 — 2026-11-06
+
+- Corretto l'errore SQL `Duplicate entry 'necessary' for key 'idx_alias'` in reinstallazione/aggiornamento: il seed delle categorie è idempotente e non è più nell'install SQL.
+
 ## 2.0.0 — 2026-11-06
 
 - Componente amministrativo `com_joomcookies` con panoramica, scansione, cookie rilevati, servizi, categorie, banner, testi, YouTube e diagnostica.
