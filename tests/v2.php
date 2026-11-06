@@ -19,6 +19,19 @@ use JoomCookies\Plugin\System\Joomcookies\Service\ServiceRegistry;
 $installSql = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/sql/install.mysql.utf8.sql') ?: '';
 assertTrue(!str_contains($installSql, "INSERT INTO `#__joomcookies_categories`"), 'Install SQL does not seed categories (avoids duplicate alias)');
 
+$pluginClassFile = dirname(__DIR__) . '/extensions/plg_system_joomcookies/src/Extension/Joomcookies.php';
+$bridgeFile      = dirname(__DIR__) . '/extensions/plg_system_joomcookies/src/Service/ComponentConfigBridge.php';
+$pluginXml       = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/joomcookies.xml') ?: '';
+$pluginSrc       = file_get_contents($pluginClassFile) ?: '';
+$bridgeSrc       = file_get_contents($bridgeFile) ?: '';
+
+assertTrue(is_file($bridgeFile), 'ComponentConfigBridge.php exists in plugin src/Service');
+assertTrue(str_contains($bridgeSrc, 'namespace JoomCookies\\Plugin\\System\\Joomcookies\\Service;'), 'Bridge namespace is Service, not Extension');
+assertTrue(str_contains($pluginSrc, 'use JoomCookies\\Plugin\\System\\Joomcookies\\Service\\ComponentConfigBridge;'), 'Plugin imports ComponentConfigBridge from Service');
+assertTrue(str_contains($pluginXml, '<namespace path="src">JoomCookies\\Plugin\\System\\Joomcookies</namespace>'), 'Plugin manifest registers PSR-4 namespace');
+assertTrue(class_exists(\JoomCookies\Plugin\System\Joomcookies\Service\ComponentConfigBridge::class, true), 'Bridge class autoloads');
+assertTrue(!class_exists(\JoomCookies\Plugin\System\Joomcookies\Extension\ComponentConfigBridge::class, false), 'Bridge is not registered under Extension');
+
 $guard = new SsrfGuard(['example.test'], false);
 assertTrue($guard->assertSafe('https://example.test/page') === 'https://example.test/page', 'Allowed host passes SSRF guard');
 

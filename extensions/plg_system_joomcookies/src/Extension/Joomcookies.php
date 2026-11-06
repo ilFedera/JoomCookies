@@ -10,6 +10,7 @@ namespace JoomCookies\Plugin\System\Joomcookies\Extension;
 \defined('_JEXEC') or die;
 
 use JoomCookies\Plugin\System\Joomcookies\Service\BannerRenderer;
+use JoomCookies\Plugin\System\Joomcookies\Service\ComponentConfigBridge;
 use JoomCookies\Plugin\System\Joomcookies\Service\ConfigBuilder;
 use JoomCookies\Plugin\System\Joomcookies\Service\ConsentState;
 use JoomCookies\Plugin\System\Joomcookies\Service\HtmlGuard;

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.2 — 2026-11-06
+
+- Corretto il frontend: il plugin importa `ComponentConfigBridge` dal namespace `Service`. Senza l'import Joomla cercava la classe in `Extension` e interrompeva la pagina.
+
 ## 2.0.1 — 2026-11-06
 
 - Corretto l'errore SQL `Duplicate entry 'necessary' for key 'idx_alias'` in reinstallazione/aggiornamento: il seed delle categorie è idempotente e non è più nell'install SQL.

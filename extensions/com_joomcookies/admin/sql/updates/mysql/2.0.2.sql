@@ -1,0 +1,1 @@
+-- 2.0.2: plugin import fix for ComponentConfigBridge; no schema change.
