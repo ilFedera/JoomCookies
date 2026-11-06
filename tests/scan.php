@@ -54,7 +54,7 @@ $sessionHit = CookieClassifier::suggest(['name' => $hex, 'domain' => 'example.te
 assertTrue($sessionHit !== null && $sessionHit['id'] === 'joomla-session' && $sessionHit['category'] === 'necessary', 'First-party HttpOnly session hex cookie can be suggested as Joomla session');
 $gcm = HtmlAnalyzer::analyze('<script id="joomcookies-gcm">gtag("consent","default");</script>', 'https://example.test/', 'example.test');
 assertTrue(array_column($gcm, 'service_id') === [], 'Consent Mode stub is not reported as Google Analytics');
-assertTrue(ServiceCatalog::identify('https://www.google.com/recaptcha/api.js')['category'] === 'unclassified', 'reCAPTCHA is suggested unclassified for admin review');
+assertTrue(ServiceCatalog::identify('https://www.google.com/recaptcha/api.js')['category'] === 'embeds', 'Scanner and blocker use the same consent category for reCAPTCHA');
 assertTrue(ServiceCatalog::identify('https://fonts.googleapis.com/css2?family=Roboto')['id'] === 'google-fonts', 'Google Fonts stylesheet host is recognised');
 assertTrue(ServiceCatalog::identify('https://kit.fontawesome.com/abc.js')['id'] === 'font-awesome', 'Font Awesome kit host is recognised');
 
