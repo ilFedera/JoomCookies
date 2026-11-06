@@ -205,13 +205,44 @@
     }
   }
 
+  function attachToBody() {
+    if (root && document.body && root.parentNode !== document.body) {
+      document.body.appendChild(root);
+    }
+  }
+
+  function forwardPageScroll(event) {
+    if (!banner || banner.hidden || (panel && !panel.hidden)) {
+      return;
+    }
+    var canScrollSelf = banner.scrollHeight > banner.clientHeight + 2;
+    if (canScrollSelf) {
+      var down = event.deltaY > 0;
+      var atBottom = banner.scrollTop + banner.clientHeight >= banner.scrollHeight - 1;
+      var atTop = banner.scrollTop <= 0;
+      if ((down && !atBottom) || (!down && !atTop)) {
+        return;
+      }
+    }
+    window.scrollBy(event.deltaX, event.deltaY);
+  }
+
+  function lockPageScroll(locked) {
+    if (locked) {
+      document.documentElement.classList.add('jck-prefs-open');
+    } else {
+      document.documentElement.classList.remove('jck-prefs-open');
+    }
+  }
+
   function openDialog(which) {
+    attachToBody();
     lastFocus = document.activeElement;
     root.hidden = false;
-    setHidden(overlay, false);
     setHidden(banner, which !== 'banner');
     setHidden(panel, which !== 'panel');
-    document.documentElement.classList.add('jck-open');
+    setHidden(overlay, which !== 'panel');
+    lockPageScroll(which === 'panel');
     var target = which === 'panel' ? panel : banner;
     target.focus();
     var focusable = target.querySelector('button, [href], input');
@@ -224,7 +255,7 @@
     setHidden(banner, true);
     setHidden(panel, true);
     setHidden(overlay, true);
-    document.documentElement.classList.remove('jck-open');
+    lockPageScroll(false);
     if (!keepRoot) {
       var reopen = root.querySelector('.jck-reopen');
       setHidden(root, !reopen);
@@ -486,10 +517,14 @@
     if (!root || !config || config.enabled === false || config.enabled === 0) {
       return;
     }
+    attachToBody();
     banner = root.querySelector('[data-jck-banner]');
     panel = root.querySelector('[data-jck-panel]');
     overlay = root.querySelector('[data-jck-overlay]');
     bind();
+    if (banner) {
+      banner.addEventListener('wheel', forwardPageScroll, { passive: true });
+    }
     window.JoomCookies._booted = true;
 
     var state = readState();

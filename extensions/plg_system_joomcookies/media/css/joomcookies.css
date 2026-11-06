@@ -1,4 +1,4 @@
-#joomcookies-root {
+#joomcookies-root.jck-root {
   --jck-bg: #111827;
   --jck-text: #f9fafb;
   --jck-accent: #2563eb;
@@ -6,175 +6,212 @@
   --jck-muted: #d1d5db;
   --jck-radius: 16px;
   --jck-font: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, sans-serif;
-}
-
-.jck-root {
-  position: relative;
-  z-index: 100000;
+  --jck-z: 2147483647;
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 2147483647;
   font-family: var(--jck-font);
+  font-size: 16px;
+  line-height: 1.5;
   color: var(--jck-text);
+  text-align: left;
+  box-sizing: border-box;
 }
 
-.jck-root[hidden] {
+#joomcookies-root.jck-root *,
+#joomcookies-root.jck-root *::before,
+#joomcookies-root.jck-root *::after {
+  box-sizing: border-box;
+}
+
+#joomcookies-root.jck-root[hidden] {
   display: none !important;
 }
 
-html.jck-open {
+#joomcookies-root .jck-overlay,
+#joomcookies-root .jck-banner,
+#joomcookies-root .jck-panel,
+#joomcookies-root .jck-reopen {
+  pointer-events: auto;
+}
+
+html.jck-prefs-open {
   overflow: hidden;
 }
 
-.jck-overlay {
+#joomcookies-root .jck-overlay {
   position: fixed;
   inset: 0;
+  z-index: 2147483646;
   background: rgba(15, 23, 42, 0.45);
 }
 
-.jck-overlay[hidden],
-.jck-banner[hidden],
-.jck-panel[hidden] {
+#joomcookies-root .jck-overlay[hidden],
+#joomcookies-root .jck-banner[hidden],
+#joomcookies-root .jck-panel[hidden] {
   display: none !important;
 }
 
-.jck-banner,
-.jck-panel {
+#joomcookies-root .jck-banner,
+#joomcookies-root .jck-panel {
   position: fixed;
-  z-index: 100001;
+  z-index: 2147483647;
+  left: 50%;
+  width: calc(100% - 32px);
+  max-width: 900px;
+  max-height: calc(100vh - 32px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: var(--jck-bg);
   color: var(--jck-text);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+  border-radius: var(--jck-radius);
+  padding: 1.25rem 1.35rem;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
-.jck-banner:focus,
-.jck-panel:focus {
+#joomcookies-root .jck-banner:focus,
+#joomcookies-root .jck-panel:focus {
   outline: none;
 }
 
-.jck-banner--bottom {
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 1.25rem;
+#joomcookies-root .jck-banner--bottom,
+#joomcookies-root .jck-banner--box-left,
+#joomcookies-root .jck-banner--box-right {
+  top: auto;
+  bottom: 16px;
+  transform: translateX(-50%);
 }
 
-.jck-banner--top {
-  left: 0;
-  right: 0;
-  top: 0;
-  padding: 1.25rem;
+#joomcookies-root .jck-banner--top {
+  top: 16px;
+  bottom: auto;
+  transform: translateX(-50%);
 }
 
-.jck-banner--box-left,
-.jck-banner--box-right,
-.jck-banner--modal,
-.jck-panel {
-  width: min(42rem, calc(100vw - 1.5rem));
-  max-height: calc(100vh - 1.5rem);
-  overflow: auto;
-  border-radius: var(--jck-radius);
-  padding: 1.25rem;
-}
-
-.jck-banner--box-left {
-  left: 0.75rem;
-  bottom: 0.75rem;
-}
-
-.jck-banner--box-right {
-  right: 0.75rem;
-  bottom: 0.75rem;
-}
-
-.jck-banner--modal,
-.jck-panel {
-  left: 50%;
+#joomcookies-root .jck-banner--modal,
+#joomcookies-root .jck-panel {
   top: 50%;
+  bottom: auto;
   transform: translate(-50%, -50%);
 }
 
-.jck-title {
+#joomcookies-root .jck-title,
+#joomcookies-root h2.jck-title {
   margin: 0 0 0.75rem;
-  font-size: 1.15rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--jck-text) !important;
+  font-family: inherit;
+  font-size: 1.2rem;
+  font-weight: 700;
   line-height: 1.3;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
-.jck-message,
-.jck-category__desc,
-.jck-embed__text {
+#joomcookies-root .jck-message,
+#joomcookies-root .jck-category__desc,
+#joomcookies-root .jck-switch__label,
+#joomcookies-root .jck-badge {
+  color: var(--jck-text);
+}
+
+#joomcookies-root .jck-message,
+#joomcookies-root .jck-category__desc,
+#joomcookies-root .jck-embed__text {
   margin: 0;
   color: var(--jck-muted);
   font-size: 0.95rem;
   line-height: 1.5;
 }
 
-.jck-links {
+#joomcookies-root .jck-links {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.75rem 1rem;
   margin: 0.85rem 0 1rem;
 }
 
-.jck-link,
-.jck-link:visited {
+#joomcookies-root .jck-link,
+#joomcookies-root .jck-link:visited,
+#joomcookies-root .jck-link:hover {
   color: var(--jck-text);
   text-decoration: underline;
 }
 
-.jck-actions {
+#joomcookies-root .jck-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
   gap: 0.6rem;
 }
 
-.jck-btn,
-.jck-embed__button,
-.jck-reopen,
-.jck-open-prefs {
+#joomcookies-root .jck-btn,
+#joomcookies-root .jck-embed__button,
+#joomcookies-root .jck-reopen,
+#joomcookies-root .jck-open-prefs {
   appearance: none;
+  -webkit-appearance: none;
   border: 0;
   border-radius: 999px;
-  padding: 0.7rem 1.05rem;
+  padding: 0.75rem 1.1rem;
+  min-height: 2.75rem;
   font: inherit;
   font-weight: 650;
   cursor: pointer;
   line-height: 1.2;
+  white-space: normal;
 }
 
-.jck-btn:focus-visible,
-.jck-embed__button:focus-visible,
-.jck-reopen:focus-visible,
-.jck-open-prefs:focus-visible,
-.jck-icon-btn:focus-visible,
-.jck-switch input:focus-visible + .jck-switch__ui {
+#joomcookies-root .jck-btn:focus-visible,
+#joomcookies-root .jck-embed__button:focus-visible,
+#joomcookies-root .jck-reopen:focus-visible,
+#joomcookies-root .jck-open-prefs:focus-visible,
+#joomcookies-root .jck-icon-btn:focus-visible,
+#joomcookies-root .jck-switch input:focus-visible + .jck-switch__ui {
   outline: 3px solid var(--jck-accent);
   outline-offset: 2px;
 }
 
-.jck-btn--accept,
-.jck-embed__button {
+#joomcookies-root .jck-btn--accept,
+#joomcookies-root .jck-embed__button {
   background: var(--jck-accent);
   color: var(--jck-btn-text);
 }
 
-.jck-btn--reject {
-  background: #f3f4f6;
-  color: #111827;
+#joomcookies-root .jck-btn--reject {
+  background: var(--jck-text);
+  color: var(--jck-bg);
 }
 
-.jck-btn--ghost,
-.jck-embed__button--ghost {
+#joomcookies-root .jck-btn--ghost,
+#joomcookies-root .jck-embed__button--ghost {
   background: transparent;
   color: var(--jck-text);
   box-shadow: inset 0 0 0 2px var(--jck-muted);
 }
 
-.jck-embed__actions {
+#joomcookies-root .jck-embed__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: center;
 }
 
-.jck-panel__head {
+#joomcookies-root .jck-panel__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -182,23 +219,23 @@ html.jck-open {
   margin-bottom: 1rem;
 }
 
-.jck-icon-btn {
+#joomcookies-root .jck-icon-btn {
   appearance: none;
   border: 0;
   background: transparent;
-  color: inherit;
+  color: var(--jck-text);
   font-size: 1.6rem;
   line-height: 1;
   cursor: pointer;
   padding: 0.2rem 0.45rem;
 }
 
-.jck-category {
+#joomcookies-root .jck-category {
   padding: 0.85rem 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid color-mix(in srgb, var(--jck-text) 16%, transparent);
 }
 
-.jck-category__row {
+#joomcookies-root .jck-category__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -206,21 +243,22 @@ html.jck-open {
   margin-bottom: 0.35rem;
 }
 
-.jck-switch {
+#joomcookies-root .jck-switch {
   display: flex;
   align-items: center;
   gap: 0.7rem;
   cursor: pointer;
+  color: var(--jck-text);
 }
 
-.jck-switch input {
+#joomcookies-root .jck-switch input {
   position: absolute;
   opacity: 0;
   width: 1px;
   height: 1px;
 }
 
-.jck-switch__ui {
+#joomcookies-root .jck-switch__ui {
   width: 2.6rem;
   height: 1.45rem;
   border-radius: 999px;
@@ -229,7 +267,7 @@ html.jck-open {
   flex: 0 0 auto;
 }
 
-.jck-switch__ui::after {
+#joomcookies-root .jck-switch__ui::after {
   content: "";
   position: absolute;
   top: 0.15rem;
@@ -241,30 +279,31 @@ html.jck-open {
   transition: transform 0.16s ease;
 }
 
-.jck-switch input:checked + .jck-switch__ui {
+#joomcookies-root .jck-switch input:checked + .jck-switch__ui {
   background: var(--jck-accent);
 }
 
-.jck-switch input:checked + .jck-switch__ui::after {
+#joomcookies-root .jck-switch input:checked + .jck-switch__ui::after {
   transform: translateX(1.15rem);
 }
 
-.jck-switch input:disabled + .jck-switch__ui {
+#joomcookies-root .jck-switch input:disabled + .jck-switch__ui {
   opacity: 0.7;
 }
 
-.jck-badge {
+#joomcookies-root .jck-badge {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--jck-muted);
 }
 
-.jck-reopen {
+#joomcookies-root .jck-reopen {
   position: fixed;
-  right: 0.85rem;
-  bottom: 0.85rem;
-  z-index: 99999;
+  right: 16px;
+  bottom: 16px;
+  left: auto;
+  z-index: 2147483647;
   background: var(--jck-bg);
   color: var(--jck-text);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
@@ -314,25 +353,20 @@ html.jck-open {
 }
 
 @media (max-width: 720px) {
-  .jck-banner--bottom,
-  .jck-banner--top {
+  #joomcookies-root .jck-banner,
+  #joomcookies-root .jck-panel {
+    width: calc(100% - 24px);
+    max-width: none;
     padding: 1rem;
+    max-height: calc(100vh - 24px);
   }
 
-  .jck-actions,
-  .jck-btn {
+  #joomcookies-root .jck-actions {
+    flex-direction: column;
+  }
+
+  #joomcookies-root .jck-btn {
     width: 100%;
-  }
-
-  .jck-btn {
     text-align: center;
-  }
-
-  .jck-banner--modal,
-  .jck-panel,
-  .jck-banner--box-left,
-  .jck-banner--box-right {
-    width: calc(100vw - 1rem);
-    max-height: calc(100vh - 1rem);
   }
 }

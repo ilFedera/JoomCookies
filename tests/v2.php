@@ -47,6 +47,18 @@ assertTrue($defaults['text_title'] === 'La tua privacy è importante', 'Default 
 assertTrue(str_contains((string) $defaults['text_message'], 'solo con il tuo consenso'), 'Default banner message is Italian');
 assertTrue($defaults['text_youtube_prefs'] === 'Gestisci preferenze', 'Default YouTube preferences button is Italian');
 
+$css = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/css/joomcookies.css') ?: '';
+assertTrue(str_contains($css, '2147483647'), 'Banner uses a maximum stacking z-index');
+assertTrue(str_contains($css, 'calc(100% - 32px)'), 'Banner width is viewport-relative');
+assertTrue(str_contains($css, 'max-width: 900px'), 'Banner has a readable max width');
+assertTrue(!preg_match('/html\.jck-open\s*\{[^}]*overflow:\s*hidden/', $css), 'Simple banner does not lock html overflow');
+assertTrue(str_contains($css, 'html.jck-prefs-open'), 'Preferences panel can lock page scroll');
+assertTrue(str_contains($css, 'color: var(--jck-text) !important'), 'Title colour uses configured text token');
+assertTrue(str_contains($js, 'attachToBody'), 'Banner root is moved under document.body');
+assertTrue(str_contains($js, "lockPageScroll(which === 'panel')"), 'Page scroll lock is limited to the preferences panel');
+assertTrue(!preg_match('/preventDefault\(\).*wheel|wheel.*preventDefault/', $js), 'Wheel events are not cancelled');
+assertTrue(str_contains($js, "addEventListener('wheel', forwardPageScroll, { passive: true })"), 'Banner forwards wheel to the page without blocking it');
+
 $guard = new SsrfGuard(['example.test'], false);
 assertTrue($guard->assertSafe('https://example.test/page') === 'https://example.test/page', 'Allowed host passes SSRF guard');
 

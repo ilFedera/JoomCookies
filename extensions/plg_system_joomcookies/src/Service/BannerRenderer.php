@@ -137,7 +137,7 @@ final class BannerRenderer
             $chunks[] = $name . ':' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
         }
 
-        return '#joomcookies-root{' . implode(';', $chunks) . ';}';
+        return '#joomcookies-root.jck-root{' . implode(';', $chunks) . ';}';
     }
 
     private static function plain(string $value): string

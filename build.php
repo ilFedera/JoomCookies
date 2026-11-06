@@ -17,7 +17,7 @@ foreach ([$dist, $tmp, $package . '/packages'] as $dir) {
 
 $pluginZip    = $package . '/packages/plg_system_joomcookies.zip';
 $componentZip = $package . '/packages/com_joomcookies.zip';
-$packageZip   = $dist . '/pkg_joomcookies-2.1.0.zip';
+$packageZip   = $dist . '/pkg_joomcookies-2.1.1.zip';
 $component    = $root . '/extensions/com_joomcookies';
 
 foreach ([$pluginZip, $componentZip, $packageZip] as $file) {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.1 — 2026-11-06
+
+- Banner isolato, centrato e con z-index massimo; titolo e testi usano i colori configurati.
+- La pagina resta scorrevole con il banner aperto: `overflow: hidden` solo sul pannello Personalizza.
+- Root montato su `document.body` per evitare stacking context del template.
+
 ## 2.1.0 — 2026-11-06
 
 - Banner e JavaScript iniettati anche in `onAfterRender` se YOOtheme o un ottimizzatore omettono gli asset in head.
