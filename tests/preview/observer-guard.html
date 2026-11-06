@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>JoomCookies observer guard</title>
+  <link rel="stylesheet" href="../../extensions/plg_system_joomcookies/media/css/joomcookies.css">
+</head>
+<body>
+  <div class="yt-grid">
+    <div class="youtube-player" data-id="dQw4w9WgXcQ"></div>
+    <div class="youtube-player" data-id="dQw4w9WgXcQ"></div>
+    <div class="youtube-player" data-id="dQw4w9WgXcQ"></div>
+  </div>
+  <p id="result">running</p>
+  <script type="application/json" id="joomcookies-config">{"enabled":true,"version":"1","position":"bottom","theme":{"background":"#111827","text":"#F9FAFB","accent":"#2563EB","buttonText":"#FFFFFF","muted":"#D1D5DB"},"texts":{"title":"Usiamo i cookie","message":"Test","accept":"Accetta tutti","reject":"Rifiuta tutti","customize":"Personalizza","save":"Salva","close":"Chiudi","reopen":"Preferenze","prefsTitle":"Preferenze","youtubeBlocked":"Video YouTube bloccato","youtubeLoad":"Carica il video","youtubeHelp":"Attiva i contenuti esterni per visualizzarlo.","youtubePrefs":"Gestisci preferenze"},"links":{},"categories":{"necessary":{"id":"necessary","label":"Necessari","required":true},"embeds":{"id":"embeds","label":"Contenuti esterni","required":false}},"services":[],"cookie":{"name":"joomcookies_consent","days":180,"path":"/","sameSite":"Lax"},"youtube":{"nocookie":true,"thumbnails":"local"},"ui":{"reopen":true,"diagnostic":false},"reloadOnRevoke":false}</script>
+  <div id="joomcookies-root" class="jck-root" data-jck-root="1">
+    <div class="jck-overlay" data-jck-overlay="1" hidden></div>
+    <section class="jck-banner" data-jck-banner="1" hidden role="dialog"><button type="button" data-jck-action="reject">Rifiuta tutti</button><button type="button" data-jck-action="accept">Accetta tutti</button></section>
+    <section class="jck-panel" data-jck-panel="1" hidden role="dialog"></section>
+  </div>
+  <script>
+    window.__jckMutations = 0;
+    var nativeObserve = MutationObserver.prototype.observe;
+    document.documentElement.addEventListener('jck-count', function () {});
+    var probe = new MutationObserver(function (records) {
+      window.__jckMutations += records.length;
+    });
+    probe.observe(document.documentElement, { childList: true, subtree: true });
+  </script>
+  <script src="../../extensions/plg_system_joomcookies/media/js/joomcookies.js"></script>
+  <script>
+    setTimeout(function () {
+      var extra = document.createElement('div');
+      extra.innerHTML = '<div class="youtube-player" data-id="dQw4w9WgXcQ"></div><p>yootheme fake node</p>';
+      document.body.appendChild(extra);
+      extra.appendChild(document.createElement('span'));
+      extra.appendChild(document.createElement('span'));
+    }, 50);
+    setTimeout(function () {
+      var placeholders = document.querySelectorAll('[data-jck-youtube]').length;
+      var frozen = window.__jckMutations > 200;
+      document.getElementById('result').textContent = JSON.stringify({
+        mutations: window.__jckMutations,
+        placeholders: placeholders,
+        frozen: frozen,
+        booted: !!(window.JoomCookies && window.JoomCookies._booted)
+      });
+    }, 400);
+  </script>
+</body>
+</html>

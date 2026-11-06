@@ -264,7 +264,7 @@ final class HtmlGuard
     public function enhanceYoutubePlayers(string $html): string
     {
         return preg_replace_callback(
-            '#<div\b([^>]*\byoutube-player\b[^>]*)>(.*?)</div>#is',
+            '#<div\b([^>]*\byoutube-player\b[^>]*)>(\s*)</div>#is',
             function (array $match): string {
                 $attributes = $match[1] ?? '';
                 $inner      = $match[2] ?? '';

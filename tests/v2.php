@@ -143,6 +143,11 @@ $js = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/m
 assertTrue(str_contains($js, 'enhanceYoutubePlayers'), 'Frontend enhances youtube-player containers');
 assertTrue(str_contains($js, 'observeDynamicContent'), 'MutationObserver watches dynamically added videos');
 assertTrue(str_contains($js, 'isYoutubeEmbed(node) && !onlyNode'), 'YouTube is not auto-injected on general accept');
+assertTrue(str_contains($js, 'youtubeBusy'), 'YouTube enhance has a reentrancy guard');
+assertTrue(str_contains($js, 'takeRecords()'), 'Observer queue is drained while enhancing');
+assertTrue(str_contains($js, 'isOwnYoutubeNode'), 'Observer ignores JoomCookies own DOM mutations');
+assertTrue(!str_contains($js, "document.querySelectorAll('[data-jck-youtube]').forEach(refreshYoutubeActions)"), 'Enhance does not refresh every YouTube node on each mutation');
+assertTrue(str_contains($js, 'JoomCookies: frontend init skipped'), 'Start errors are caught without breaking the page');
 
 $driver = new UnavailableBrowserScanDriver();
 assertTrue($driver->isAvailable() === false, 'Browser driver is not available');

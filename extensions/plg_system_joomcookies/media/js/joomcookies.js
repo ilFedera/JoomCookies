@@ -13,6 +13,9 @@
   var overlay;
   var lastFocus = null;
   var loadedKeys = Object.create(null);
+  var youtubeBusy = false;
+  var youtubeQueued = null;
+  var youtubeObserver = null;
 
   function ready(fn) {
     if (document.readyState === 'loading') {
@@ -418,6 +421,17 @@
     refreshYoutubeActions(node);
   }
 
+  function isOwnYoutubeNode(node) {
+    if (!node || node.nodeType !== 1) {
+      return true;
+    }
+    if (node.id === 'joomcookies-root' || (node.closest && node.closest('#joomcookies-root, .jck-embed, .jck-root'))) {
+      return true;
+    }
+    var className = node.className && node.className.toString ? node.className.toString() : '';
+    return className.indexOf('jck-') === 0;
+  }
+
   function refreshYoutubeActions(node) {
     if (!isYoutubeEmbed(node) || node.getAttribute('data-jck-loaded') === '1') {
       return;
@@ -427,60 +441,103 @@
       return;
     }
     var texts = youtubeTexts();
-    var allowed = currentCategories().embeds;
-    actions.innerHTML = '<button type="button" class="jck-embed__button' + (allowed ? ' jck-embed__button--ghost' : '') + '" data-jck-open-prefs="1">' + texts.prefs + '</button>';
-    if (allowed) {
-      actions.innerHTML += '<button type="button" class="jck-embed__button" data-jck-load-embed="1">' + texts.load + '</button>';
+    var allowed = !!(config && currentCategories().embeds);
+    var hasPrefs = !!actions.querySelector('[data-jck-open-prefs]');
+    var hasLoad = !!actions.querySelector('[data-jck-load-embed]');
+    if (hasPrefs && ((allowed && hasLoad) || (!allowed && !hasLoad))) {
+      return;
     }
+    var html = '<button type="button" class="jck-embed__button' + (allowed ? ' jck-embed__button--ghost' : '') + '" data-jck-open-prefs="1">' + texts.prefs + '</button>';
+    if (allowed) {
+      html += '<button type="button" class="jck-embed__button" data-jck-load-embed="1">' + texts.load + '</button>';
+    }
+    actions.innerHTML = html;
   }
 
   function enhanceYoutubePlayers(rootNode) {
-    var scope = rootNode && rootNode.querySelectorAll ? rootNode : document;
-    var nodes = [];
-    if (rootNode && rootNode.nodeType === 1 && rootNode.classList && rootNode.classList.contains('youtube-player')) {
-      nodes.push(rootNode);
+    if (youtubeBusy) {
+      youtubeQueued = rootNode || document;
+      return;
     }
-    scope.querySelectorAll('.youtube-player').forEach(function (node) {
-      nodes.push(node);
-    });
-    nodes.forEach(function (host) {
-      if (host.getAttribute('data-jck-yt') === '1' && host.querySelector('[data-jck-youtube]')) {
-        refreshYoutubeActions(host.querySelector('[data-jck-youtube]'));
-        return;
+    youtubeBusy = true;
+    if (youtubeObserver) {
+      youtubeObserver.disconnect();
+      youtubeObserver.takeRecords();
+    }
+    try {
+      var scope = rootNode && rootNode.querySelectorAll ? rootNode : document;
+      var hosts = [];
+      if (rootNode && rootNode.nodeType === 1 && rootNode.classList && rootNode.classList.contains('youtube-player')) {
+        hosts.push(rootNode);
       }
-      if (host.hasAttribute('data-jck-youtube')) {
-        refreshYoutubeActions(host);
-        return;
+      if (scope.querySelectorAll) {
+        scope.querySelectorAll('.youtube-player').forEach(function (node) {
+          hosts.push(node);
+        });
       }
-      var videoId = youtubeIdFromValue(host.getAttribute('data-id') || '');
-      if (!videoId) {
-        return;
+      hosts.forEach(function (host) {
+        if (host.getAttribute('data-jck-yt') === '1') {
+          var nested = host.querySelector('[data-jck-youtube]');
+          refreshYoutubeActions(nested || host);
+          return;
+        }
+        if (host.hasAttribute('data-jck-youtube')) {
+          refreshYoutubeActions(host);
+          return;
+        }
+        var videoId = youtubeIdFromValue(host.getAttribute('data-id') || '');
+        if (!videoId) {
+          return;
+        }
+        host.setAttribute('data-jck-yt', '1');
+        renderYoutubePlaceholder(host, videoId);
+      });
+    } catch (e) {
+      log('JoomCookies: YouTube enhance skipped', e);
+    } finally {
+      youtubeBusy = false;
+      if (youtubeObserver && document.documentElement) {
+        youtubeObserver.observe(document.documentElement, { childList: true, subtree: true });
       }
-      host.setAttribute('data-jck-yt', '1');
-      renderYoutubePlaceholder(host, videoId);
-    });
-    document.querySelectorAll('[data-jck-youtube]').forEach(refreshYoutubeActions);
+      if (youtubeQueued) {
+        var queued = youtubeQueued;
+        youtubeQueued = null;
+        enhanceYoutubePlayers(queued);
+      }
+    }
   }
 
   function observeDynamicContent() {
-    if (window.JoomCookies && window.JoomCookies._observer) {
+    if (youtubeObserver || !window.MutationObserver) {
       return;
     }
-    if (!window.MutationObserver) {
-      return;
-    }
-    var observer = new MutationObserver(function (mutations) {
-      mutations.forEach(function (mutation) {
-        mutation.addedNodes.forEach(function (node) {
-          if (node.nodeType === 1) {
-            enhanceYoutubePlayers(node);
+    youtubeObserver = new MutationObserver(function (mutations) {
+      if (youtubeBusy) {
+        return;
+      }
+      var pending = [];
+      for (var i = 0; i < mutations.length; i += 1) {
+        var added = mutations[i].addedNodes;
+        for (var j = 0; j < added.length; j += 1) {
+          var node = added[j];
+          if (node.nodeType !== 1 || isOwnYoutubeNode(node)) {
+            continue;
           }
-        });
+          if ((node.classList && node.classList.contains('youtube-player')) || (node.querySelector && node.querySelector('.youtube-player'))) {
+            pending.push(node);
+          }
+        }
+      }
+      if (!pending.length) {
+        return;
+      }
+      pending.forEach(function (node) {
+        enhanceYoutubePlayers(node);
       });
     });
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    youtubeObserver.observe(document.documentElement, { childList: true, subtree: true });
     if (window.JoomCookies) {
-      window.JoomCookies._observer = observer;
+      window.JoomCookies._observer = youtubeObserver;
     }
   }
 
@@ -672,37 +729,43 @@
     if (window.JoomCookies && window.JoomCookies._booted) {
       return;
     }
-    root = document.querySelector('[data-jck-root="1"]');
-    config = loadConfig();
-    if (!root || !config || config.enabled === false || config.enabled === 0) {
-      return;
-    }
-    attachToBody();
-    banner = root.querySelector('[data-jck-banner]');
-    panel = root.querySelector('[data-jck-panel]');
-    overlay = root.querySelector('[data-jck-overlay]');
-    bind();
-    if (banner) {
-      banner.addEventListener('wheel', forwardPageScroll, { passive: true });
-    }
-    window.JoomCookies._booted = true;
-    enhanceYoutubePlayers(document);
-    observeDynamicContent();
+    try {
+      root = document.querySelector('[data-jck-root="1"]');
+      config = loadConfig();
+      if (!root || !config || config.enabled === false || config.enabled === 0) {
+        return;
+      }
+      attachToBody();
+      banner = root.querySelector('[data-jck-banner]');
+      panel = root.querySelector('[data-jck-panel]');
+      overlay = root.querySelector('[data-jck-overlay]');
+      bind();
+      if (banner) {
+        banner.addEventListener('wheel', forwardPageScroll, { passive: true });
+      }
+      window.JoomCookies._booted = true;
+      enhanceYoutubePlayers(document);
+      observeDynamicContent();
 
-    var state = readState();
-    if (!state) {
-      fillToggles(categoriesFrom(null));
-      openDialog('banner');
-      document.dispatchEvent(new CustomEvent('joomcookies:ready', { detail: { categories: categoriesFrom(null), version: config.version } }));
-      return;
-    }
+      var state = readState();
+      if (!state) {
+        fillToggles(categoriesFrom(null));
+        openDialog('banner');
+        document.dispatchEvent(new CustomEvent('joomcookies:ready', { detail: { categories: categoriesFrom(null), version: config.version } }));
+        return;
+      }
 
-    activateScripts(state.c);
-    activateEmbeds(state.c);
-    enhanceYoutubePlayers(document);
-    closeDialogs(false);
-    document.dispatchEvent(new CustomEvent('joomcookies:ready', { detail: { categories: state.c, version: config.version } }));
-    log('JoomCookies: restored consent', state);
+      activateScripts(state.c);
+      activateEmbeds(state.c);
+      enhanceYoutubePlayers(document);
+      closeDialogs(false);
+      document.dispatchEvent(new CustomEvent('joomcookies:ready', { detail: { categories: state.c, version: config.version } }));
+      log('JoomCookies: restored consent', state);
+    } catch (e) {
+      if (window.console && console.error) {
+        console.error('JoomCookies: frontend init skipped', e);
+      }
+    }
   }
 
   window.JoomCookies = {

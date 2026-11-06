@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.1 — 2026-11-06
+
+- Corretto il blocco del frontend: il MutationObserver YouTube non riscrive più tutto il DOM a ogni mutazione.
+- I placeholder YouTube PHP avvolgono soltanto i contenitori `.youtube-player` vuoti, senza spezzare markup nidificato YOOtheme.
+- Errori JavaScript di inizializzazione non interrompono il resto della pagina.
+
 ## 2.2.0 — 2026-11-06
 
 - Segnaposto YouTube 16:9 responsive per griglie e video singoli, con variante compatta e pulsanti JoomCookies.

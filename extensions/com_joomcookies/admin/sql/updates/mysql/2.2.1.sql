@@ -1,0 +1,1 @@
+-- 2.2.1: frontend MutationObserver fix only; no schema change.

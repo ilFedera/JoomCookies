@@ -120,6 +120,8 @@ assertTrue(!preg_match('#<iframe[^>]+src="https://www.youtube.com/embed/#', $blo
 assertTrue(str_contains($blocked, 'data-jck-youtube="dQw4w9WgXcQ"'), 'YouTube placeholder is rendered');
 assertTrue(str_contains($blocked, 'data-jck-open-prefs="1"'), 'YouTube placeholder can open preferences');
 assertTrue(str_contains($blocked, 'data-jck-yt="1"') && str_contains($blocked, 'youtube-player'), 'Existing youtube-player containers are enhanced');
+$nestedPlayer = $guard->process('<div class="youtube-player" data-id="dQw4w9WgXcQ"><div class="uk-cover">keep</div></div>');
+assertTrue(str_contains($nestedPlayer, 'uk-cover') && !str_contains($nestedPlayer, 'data-jck-yt="1"'), 'Nested youtube-player markup is left for JS, not split by PHP');
 assertTrue(!str_contains($blocked, 'i.ytimg.com'), 'YouTube placeholders do not request thumbnails');
 assertTrue(str_contains($blocked, 'https://example.com/safe'), 'Unregistered iframe is left untouched');
 assertTrue(str_contains($blocked, 'data-jck-open-prefs="1"'), 'Preferences shortcode becomes a button');
