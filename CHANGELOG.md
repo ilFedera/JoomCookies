@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.8 — 2026-11-06
+
+- Corretto il parse error PHP nella pagina Scansione (`<?php` duplicato nel template).
+- La scoperta sitemap resta autonoma: solo `robots.txt` e sitemap XML dello stesso host, senza JL Sitemap né altre estensioni.
+
 ## 2.2.7 — 2026-11-06
 
 - Registro persistente **URL individuati** (originale, normalizzato, provenienza, metodo, HTTP, redirect, esito, motivo, canonical) con ricerca, filtri, paginazione ed export CSV.

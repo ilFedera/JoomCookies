@@ -5,7 +5,7 @@
 	<creationDate>2026-11</creationDate>
 	<copyright>(C) 2026 JoomCookies</copyright>
 	<license>GNU General Public License version 2 or later; see LICENSE.txt</license>
-	<version>2.2.7</version>
+	<version>2.2.8</version>
 	<description>COM_JOOMCOOKIES_XML_DESCRIPTION</description>
 	<namespace path="src">JoomCookies\Component\Joomcookies</namespace>
 	<scriptfile>script.php</scriptfile>

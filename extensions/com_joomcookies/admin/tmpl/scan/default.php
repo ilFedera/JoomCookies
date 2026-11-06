@@ -201,7 +201,6 @@ include dirname(__DIR__) . '/_nav.php';
 	</tbody>
 </table>
 <?php
-<?php
 $urls = $page['urls'] ?? ['rows' => [], 'total' => 0];
 $filters = $page['url_filters'] ?? ['q' => '', 'outcome' => '', 'discovery' => '', 'limit' => 25, 'start' => 0];
 $totalUrls = (int) ($urls['total'] ?? 0);
@@ -298,7 +297,7 @@ $start = (int) ($filters['start'] ?? 0);
 	</nav>
 <?php endif; ?>
 <?php
-$scanJs = rtrim(Uri::root(true), '/') . '/media/com_joomcookies/js/scan.js?v=2.2.7';
+$scanJs = rtrim(Uri::root(true), '/') . '/media/com_joomcookies/js/scan.js?v=2.2.8';
 $wa = $this->getDocument()->getWebAssetManager();
 try {
 	$wa->getRegistry()->addExtensionRegistryFile('com_joomcookies');

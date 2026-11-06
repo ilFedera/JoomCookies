@@ -1,4 +1,4 @@
-# Documentazione tecnica JoomCookies 2.2.7
+# Documentazione tecnica JoomCookies 2.2.8
 
 ## Architettura
 
@@ -114,7 +114,7 @@ Lo scanner HTTP non esegue JavaScript e non avvia un browser. Vede l’HTML cons
 Metodi di scoperta:
 
 - **html** (predefinito): URL di partenza, menu pubblici in forma SEF, collegamenti `<a>` interni
-- **sitemap**: `robots.txt` e `sitemap.xml`, inclusi sitemap index; non segue i link HTML
+- **sitemap**: `robots.txt`, `/sitemap.xml` e `/sitemap_index.xml` dello stesso host (protocollo XML standard, anche gli index). Non usa JL Sitemap né altre estensioni; non segue i link HTML
 - **combined**: sitemap più crawling HTML
 
 Ogni URL considerato è scritto in `#__joomcookies_scan_urls` e resta consultabile dopo il completamento. La scansione rapida può terminare per limite di pagine con coda ancora piena; quella completa termina quando la coda è vuota.

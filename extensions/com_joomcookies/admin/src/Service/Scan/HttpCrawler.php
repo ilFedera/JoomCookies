@@ -200,7 +200,7 @@ final class HttpCrawler
     private function seedFromSitemap(string $startUrl, HttpTransport $transport, SsrfGuard $guard, int $timeout, int $maxBytes, array &$queue, array &$seen, array &$errors): void
     {
         $origin = parse_url($startUrl, PHP_URL_SCHEME) . '://' . parse_url($startUrl, PHP_URL_HOST);
-        $candidates = [$origin . '/sitemap.xml', $origin . '/robots.txt'];
+        $candidates = [$origin . '/sitemap.xml', $origin . '/sitemap_index.xml', $origin . '/robots.txt'];
 
         foreach ($candidates as $url) {
             try {

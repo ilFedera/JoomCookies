@@ -51,6 +51,8 @@ assertTrue(str_contains($tmpl, 'jck-scan-continue'), 'HTML fallback can POST sca
 assertTrue(str_contains($tmpl, 'jck-scan-resume-form'), 'Resume is a real POST form');
 assertTrue(str_contains($tmpl, 'media/com_joomcookies/js/scan.js'), 'Scan JS is loaded with an explicit media URL');
 assertTrue(str_contains($tmpl, 'form.submit()'), 'Watchdog continues a running scan if fetch is unavailable');
+assertTrue(!str_contains($tmpl, "<?php\n<?php"), 'Scan template does not nest PHP open tags');
+assertTrue(!str_contains($runnerSrc, 'jlsitemap') && !str_contains($runnerSrc, 'com_jlsitemap'), 'Scanner does not call JL Sitemap');
 assertTrue(str_contains($tmpl, 'COM_JOOMCOOKIES_SCAN_URLS'), 'Scan page lists discovered URLs');
 assertTrue(str_contains($tmpl, 'name="discovery"'), 'Scan form offers a discovery method');
 assertTrue(str_contains($tmpl, 'scan.urlsCsv'), 'Discovered URLs can be exported as CSV');

@@ -341,6 +341,7 @@ final class ScanRunner
 
         $origin = $scheme . '://' . $host;
         $this->enqueue($scanId, $origin . '/sitemap.xml', 0, 'sitemap');
+        $this->enqueue($scanId, $origin . '/sitemap_index.xml', 0, 'sitemap');
         $timeout = ScanLimits::timeout($options);
         $maxBytes = ScanLimits::maxBytes($options);
 

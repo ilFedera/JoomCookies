@@ -1,0 +1,1 @@
+-- 2.2.8: scan template parse fix; sitemap XML remains extension-independent. No schema change.
