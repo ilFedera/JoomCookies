@@ -17,7 +17,9 @@ include dirname(__DIR__) . '/_nav.php';
 						<span class="badge bg-secondary"><?php echo Text::_('COM_JOOMCOOKIES_REQUIRED'); ?></span>
 					<?php endif; ?>
 				</h2>
+				<label class="form-label"><?php echo Text::_('COM_JOOMCOOKIES_CAT_TITLE'); ?></label>
 				<input class="form-control mb-2" name="jform[<?php echo (int) $row['id']; ?>][title]" value="<?php echo $this->escape((string) $row['title']); ?>">
+				<label class="form-label"><?php echo Text::_('COM_JOOMCOOKIES_CAT_DESCRIPTION'); ?></label>
 				<textarea class="form-control" name="jform[<?php echo (int) $row['id']; ?>][description]"><?php echo $this->escape((string) $row['description']); ?></textarea>
 			</div>
 		</div>

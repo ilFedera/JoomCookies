@@ -155,11 +155,23 @@ html.jck-open {
   color: var(--jck-btn-text);
 }
 
-.jck-btn--reject,
-.jck-btn--ghost {
+.jck-btn--reject {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.jck-btn--ghost,
+.jck-embed__button--ghost {
   background: transparent;
   color: var(--jck-text);
   box-shadow: inset 0 0 0 2px var(--jck-muted);
+}
+
+.jck-embed__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
 }
 
 .jck-panel__head {

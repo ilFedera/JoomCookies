@@ -9,7 +9,7 @@ $data = $this->stateData;
 include dirname(__DIR__) . '/_nav.php';
 ?>
 <div class="row g-3">
-	<div class="col-md-4">
+	<div class="col-md-6">
 		<div class="card">
 			<div class="card-body">
 				<h2 class="h5"><?php echo Text::_('COM_JOOMCOOKIES_STATUS'); ?></h2>
@@ -23,12 +23,14 @@ include dirname(__DIR__) . '/_nav.php';
 					<input type="hidden" name="task" value="config.save">
 					<input type="hidden" name="return_view" value="dashboard">
 					<div class="mb-2">
-						<label class="form-label"><?php echo Text::_('COM_JOOMCOOKIES_CONSENT_VERSION'); ?></label>
-						<input class="form-control" name="jform[consent_version]" value="<?php echo $this->escape((string) $data['consent_version']); ?>">
+						<label class="form-label" for="jck-consent-version"><?php echo Text::_('COM_JOOMCOOKIES_CONSENT_VERSION'); ?></label>
+						<div class="form-text"><?php echo Text::_('COM_JOOMCOOKIES_CONSENT_VERSION_DESC'); ?></div>
+						<input class="form-control" id="jck-consent-version" name="jform[consent_version]" value="<?php echo $this->escape((string) $data['consent_version']); ?>">
 					</div>
 					<div class="mb-2">
-						<label class="form-label"><?php echo Text::_('COM_JOOMCOOKIES_BANNER'); ?></label>
-						<select class="form-select" name="jform[enabled]">
+						<label class="form-label" for="jck-enabled"><?php echo Text::_('COM_JOOMCOOKIES_BANNER'); ?></label>
+						<div class="form-text"><?php echo Text::_('COM_JOOMCOOKIES_BANNER_DESC'); ?></div>
+						<select class="form-select" id="jck-enabled" name="jform[enabled]">
 							<option value="1"<?php echo !empty($data['enabled']) ? ' selected' : ''; ?>><?php echo Text::_('JENABLED'); ?></option>
 							<option value="0"<?php echo empty($data['enabled']) ? ' selected' : ''; ?>><?php echo Text::_('JDISABLED'); ?></option>
 						</select>
@@ -39,7 +41,7 @@ include dirname(__DIR__) . '/_nav.php';
 			</div>
 		</div>
 	</div>
-	<div class="col-md-4">
+	<div class="col-md-6">
 		<div class="card">
 			<div class="card-body">
 				<h2 class="h5"><?php echo Text::_('COM_JOOMCOOKIES_NAV_SCAN'); ?></h2>
@@ -53,27 +55,4 @@ include dirname(__DIR__) . '/_nav.php';
 			</div>
 		</div>
 	</div>
-	<div class="col-md-4">
-		<div class="card">
-			<div class="card-body">
-				<h2 class="h5"><?php echo Text::_('COM_JOOMCOOKIES_MIGRATION'); ?></h2>
-				<?php if (!empty($data['migration']['source_hash'])) : ?>
-					<p><?php echo Text::_('COM_JOOMCOOKIES_MIGRATION_DONE'); ?></p>
-				<?php else : ?>
-					<p><?php echo Text::_('COM_JOOMCOOKIES_MIGRATION_PENDING'); ?></p>
-				<?php endif; ?>
-				<form action="<?php echo Route::_('index.php?option=com_joomcookies'); ?>" method="post" class="d-inline">
-					<input type="hidden" name="task" value="migration.run">
-					<button class="btn btn-sm btn-primary" type="submit"><?php echo Text::_('COM_JOOMCOOKIES_MIGRATION_RUN'); ?></button>
-					<?php echo $this->token; ?>
-				</form>
-				<form action="<?php echo Route::_('index.php?option=com_joomcookies'); ?>" method="post" class="d-inline">
-					<input type="hidden" name="task" value="migration.rollback">
-					<button class="btn btn-sm btn-outline-secondary" type="submit"><?php echo Text::_('COM_JOOMCOOKIES_MIGRATION_ROLLBACK'); ?></button>
-					<?php echo $this->token; ?>
-				</form>
-			</div>
-		</div>
-	</div>
 </div>
-<p class="mt-3 text-muted"><?php echo $this->escape((string) $data['browser_scan']); ?></p>

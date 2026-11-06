@@ -39,7 +39,8 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
     {
         return [
             'onContentPrepare'    => 'onContentPrepare',
-            'onBeforeCompileHead' => ['onBeforeCompileHead', Priority::LOW],
+            'onAfterDispatch'     => ['onAfterDispatch', Priority::HIGH],
+            'onBeforeCompileHead' => ['onBeforeCompileHead', Priority::HIGH],
             'onAfterRender'       => ['onAfterRender', Priority::MIN],
         ];
     }
@@ -64,28 +65,14 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
         }
     }
 
+    public function onAfterDispatch(EventInterface $event): void
+    {
+        $this->registerAssets();
+    }
+
     public function onBeforeCompileHead(EventInterface $event): void
     {
-        if (!$this->isActiveSite()) {
-            return;
-        }
-
-        $app = $this->getApplication();
-        $doc = $app->getDocument();
-
-        if (!$doc instanceof HtmlDocument) {
-            return;
-        }
-
-        try {
-            $wa = $doc->getWebAssetManager();
-            $wa->getRegistry()->addExtensionRegistryFile('plg_system_joomcookies');
-            $wa->useStyle('plg_system_joomcookies.core');
-            $wa->useScript('plg_system_joomcookies.core');
-            $doc->addStyleDeclaration(BannerRenderer::cssVariables($this->config()));
-        } catch (\Throwable) {
-            return;
-        }
+        $this->registerAssets();
     }
 
     public function onAfterRender(EventInterface $event): void
@@ -106,7 +93,6 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
             $config = $this->config();
             $guard  = $this->guard();
             $body   = $guard->process($body);
-            $markup = BannerRenderer::markup($config);
             $json   = json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
 
             if ($json === false) {
@@ -120,8 +106,10 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
             }
 
             if (!str_contains($body, 'data-jck-root="1"')) {
-                $body = self::injectBeforeBody($body, $markup);
+                $body = self::injectBeforeBody($body, BannerRenderer::markup($config));
             }
+
+            $body = $this->ensureFrontendAssets($body, $config);
 
             if (!empty($config['ui']['diagnostic'])) {
                 $summary = htmlspecialchars(json_encode($guard->blocked(), JSON_UNESCAPED_SLASHES) ?: '[]', ENT_QUOTES, 'UTF-8');
@@ -161,7 +149,12 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
         if ($source === 'component' && $bridge === null) {
             $this->runtimeConfig = ConfigBuilder::fromParams($this->params, $path);
         } elseif ($bridge !== null && $source !== 'plugin') {
-            $this->runtimeConfig = ConfigBuilder::fromArray($bridge['settings'], $path, $bridge['services']);
+            $this->runtimeConfig = ConfigBuilder::fromArray(
+                $bridge['settings'],
+                $path,
+                $bridge['services'] ?? [],
+                $bridge['categories'] ?? []
+            );
         } else {
             $this->runtimeConfig = ConfigBuilder::fromParams($this->params, $path);
         }
@@ -214,6 +207,73 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
         $args = $event->getArguments();
 
         return $args['subject'] ?? $args['item'] ?? $args[0] ?? null;
+    }
+
+    private function registerAssets(): void
+    {
+        if (!$this->isActiveSite()) {
+            return;
+        }
+
+        $app = $this->getApplication();
+        $doc = $app->getDocument();
+
+        if (!$doc instanceof HtmlDocument) {
+            return;
+        }
+
+        try {
+            $wa = $doc->getWebAssetManager();
+            $wa->getRegistry()->addExtensionRegistryFile('plg_system_joomcookies');
+            $wa->useStyle('plg_system_joomcookies.core');
+            $wa->useScript('plg_system_joomcookies.core');
+            $doc->addStyleDeclaration(BannerRenderer::cssVariables($this->config()));
+        } catch (\Throwable) {
+            // Assets are also injected in onAfterRender if the head pipeline skipped them.
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $config
+     */
+    private function ensureFrontendAssets(string $body, array $config): string
+    {
+        $base = rtrim(Uri::root(true), '/') . '/media/plg_system_joomcookies';
+        $css  = $base . '/css/joomcookies.css';
+        $js   = $base . '/js/joomcookies.js';
+        $ver  = '2.1.0';
+
+        if (!preg_match('#plg_system_joomcookies/css/joomcookies\.css#i', $body)) {
+            $link = '<link rel="stylesheet" href="' . htmlspecialchars($css, ENT_QUOTES, 'UTF-8')
+                . '?v=' . $ver . '" id="joomcookies-css" data-no-optimize="1">';
+            $body = self::injectBeforeHeadClose($body, $link);
+        }
+
+        if (!str_contains($body, 'id="joomcookies-vars"')) {
+            $body = self::injectBeforeHeadClose(
+                $body,
+                '<style id="joomcookies-vars">' . BannerRenderer::cssVariables($config) . '</style>'
+            );
+        }
+
+        if (!preg_match('#plg_system_joomcookies/js/joomcookies\.js#i', $body)) {
+            $script = '<script src="' . htmlspecialchars($js, ENT_QUOTES, 'UTF-8') . '?v=' . $ver
+                . '" id="joomcookies-runtime" data-jck-ignore="1" data-no-optimize="1" data-no-defer="1" data-cfasync="false"></script>';
+            $body = self::injectBeforeBody($body, $script);
+        }
+
+        return $body;
+    }
+
+    private static function injectBeforeHeadClose(string $html, string $snippet): string
+    {
+        $pos = strripos($html, '</head>');
+
+        if ($pos === false) {
+            return self::injectBeforeBody($html, $snippet);
+        }
+
+        return substr($html, 0, $pos) . $snippet . substr($html, $pos);
     }
 
     private static function injectBeforeBody(string $html, string $snippet): string

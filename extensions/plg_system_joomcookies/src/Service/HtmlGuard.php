@@ -240,8 +240,9 @@ final class HtmlGuard
             'videoId'  => $videoId,
         ], JSON_UNESCAPED_SLASHES) ?: '{}', ENT_QUOTES, 'UTF-8');
 
-        $label   = $title !== '' ? $title : (string) ($this->options['youtube_blocked_label'] ?? 'YouTube video');
-        $btn     = htmlspecialchars((string) ($this->options['youtube_load_label'] ?? 'Load video'), ENT_QUOTES, 'UTF-8');
+        $label   = $title !== '' ? $title : (string) ($this->options['youtube_blocked_label'] ?? 'Video YouTube bloccato');
+        $btn     = htmlspecialchars((string) ($this->options['youtube_load_label'] ?? 'Carica video'), ENT_QUOTES, 'UTF-8');
+        $prefs   = htmlspecialchars((string) ($this->options['youtube_prefs_label'] ?? 'Gestisci preferenze'), ENT_QUOTES, 'UTF-8');
         $help    = htmlspecialchars((string) ($this->options['youtube_help'] ?? ''), ENT_QUOTES, 'UTF-8');
         $safeId  = htmlspecialchars($videoId, ENT_QUOTES, 'UTF-8');
         $safeLab = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
@@ -258,8 +259,10 @@ final class HtmlGuard
             . '<div class="jck-embed__surface"' . $thumb . '>'
             . '<div class="jck-embed__panel"><p class="jck-embed__title">' . $safeLab . '</p>'
             . ($help !== '' ? '<p class="jck-embed__text">' . $help . '</p>' : '')
+            . '<div class="jck-embed__actions">'
+            . '<button type="button" class="jck-embed__button jck-embed__button--ghost" data-jck-open-prefs="1">' . $prefs . '</button>'
             . '<button type="button" class="jck-embed__button" data-jck-load-embed="1">' . $btn . '</button>'
-            . '</div></div></div>';
+            . '</div></div></div></div>';
     }
 
     public function youtubePlayer(string $videoId, string $title = '', string $ratio = '16 / 9'): string
@@ -318,11 +321,11 @@ final class HtmlGuard
         $src = strtolower($this->attribute($attributes, 'src'));
         $id  = strtolower($this->attribute($attributes, 'id'));
 
-        if ($id === 'joomcookies-config' || $id === 'joomcookies-runtime') {
+        if (\in_array($id, ['joomcookies-config', 'joomcookies-runtime', 'joomcookies-css'], true)) {
             return true;
         }
 
-        if ($src !== '' && (str_contains($src, 'plg_system_joomcookies') || str_contains($src, 'media/system') || str_contains($src, 'media/vendor') || str_contains($src, 'media/templates'))) {
+        if ($src !== '' && (str_contains($src, 'plg_system_joomcookies') || str_contains($src, 'joomcookies.js') || str_contains($src, 'joomcookies.css') || str_contains($src, 'media/system') || str_contains($src, 'media/vendor') || str_contains($src, 'media/templates'))) {
             return true;
         }
 

@@ -68,7 +68,7 @@ class Pkg_joomcookiesInstallerScript implements InstallerScriptInterface
                     PluginMigrator::run(false);
                 }
             } catch (\Throwable) {
-                // Retry from Components → JoomCookies → Overview.
+                // Silent import of leftover plugin params; no admin UI.
             }
         }
 

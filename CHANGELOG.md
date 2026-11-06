@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.0 — 2026-11-06
+
+- Banner e JavaScript iniettati anche in `onAfterRender` se YOOtheme o un ottimizzatore omettono gli asset in head.
+- API pubblica `window.JoomCookies` (`hasConsent`, `openPreferences`, eventi `joomcookies:ready` e `joomcookies:change`).
+- Testi italiani precompilati per nuove installazioni, senza sovrascrivere i testi già salvati.
+- Interfaccia amministrativa localizzata (it-IT/en-GB), senza chiavi tecniche visibili né riquadro migrazione V1.
+- Riepilogo scansione con pagine, cookie osservati, script, iframe e servizi identificati.
+
 ## 2.0.2 — 2026-11-06
 
 - Corretto il frontend: il plugin importa `ComponentConfigBridge` dal namespace `Service`. Senza l'import Joomla cercava la classe in `Extension` e interrompeva la pagina.

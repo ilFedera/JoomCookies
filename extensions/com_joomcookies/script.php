@@ -7,7 +7,9 @@
 
 \defined('_JEXEC') or die;
 
+use JoomCookies\Component\Joomcookies\Administrator\Service\DefaultCopy;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Migration\PluginMigrator;
+use JoomCookies\Component\Joomcookies\Administrator\Service\SettingsStore;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Installer\InstallerAdapter;
 use Joomla\CMS\Installer\InstallerScriptInterface;
@@ -56,6 +58,7 @@ class Com_JoomcookiesInstallerScript implements InstallerScriptInterface
         if (\in_array($type, ['install', 'update', 'discover_install'], true)) {
             try {
                 $this->seedCategories();
+                $this->seedSettings();
                 PluginMigrator::run(false);
             } catch (\Throwable) {
                 // Seeding/migration can be retried from the dashboard.
@@ -68,14 +71,12 @@ class Com_JoomcookiesInstallerScript implements InstallerScriptInterface
     private function seedCategories(): void
     {
         $db = Factory::getContainer()->get(DatabaseInterface::class);
-        $defaults = [
-            ['necessary', 'Necessary', 'Required for the site to work, including storage of this consent choice.', 1, 1],
-            ['statistics', 'Statistics', 'Measurement tools. Off until accepted.', 0, 2],
-            ['marketing', 'Marketing', 'Advertising and similar tools. Off until accepted.', 0, 3],
-            ['embeds', 'External content', 'Videos, maps and embeds. Off until accepted.', 0, 4],
-        ];
-
-        foreach ($defaults as [$alias, $title, $description, $required, $ordering]) {
+        foreach (DefaultCopy::categories() as $row) {
+            $alias       = $row['alias'];
+            $title       = $row['title'];
+            $description = $row['description'];
+            $required    = $row['required'];
+            $ordering    = $row['ordering'];
             $query = $db->getQuery(true)
                 ->select('COUNT(*)')
                 ->from($db->quoteName('#__joomcookies_categories'))
@@ -98,6 +99,17 @@ class Com_JoomcookiesInstallerScript implements InstallerScriptInterface
                     1,
                 ]));
             $db->setQuery($query)->execute();
+        }
+    }
+
+    private function seedSettings(): void
+    {
+        try {
+            foreach (DefaultCopy::settings() as $key => $value) {
+                SettingsStore::setIfMissing($key, $value);
+            }
+        } catch (\Throwable) {
+            // Tables may not be ready yet; a later update retries.
         }
     }
 }

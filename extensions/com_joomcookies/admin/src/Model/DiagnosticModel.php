@@ -45,11 +45,11 @@ class DiagnosticModel extends BaseDatabaseModel
         }
 
         $checks[] = [
-            'label' => 'plg_system_joomcookies',
+            'label' => 'COM_JOOMCOOKIES_CHECK_PLUGIN_INSTALLED',
             'ok'    => (bool) PluginHelper::getPlugin('system', 'joomcookies'),
         ];
         $checks[] = [
-            'label' => 'plugin enabled',
+            'label' => 'COM_JOOMCOOKIES_CHECK_PLUGIN_ENABLED',
             'ok'    => PluginHelper::isEnabled('system', 'joomcookies'),
         ];
 

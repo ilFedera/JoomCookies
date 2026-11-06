@@ -115,6 +115,7 @@ assertTrue(str_contains($blocked, 'data-jck-src="https://stats.example.test/trac
 assertTrue(str_contains($blocked, "gtag('config','G-TEST')") && str_contains($blocked, 'data-jck-category="statistics"'), 'Inline gtag is blocked');
 assertTrue(!preg_match('#<iframe[^>]+src="https://www.youtube.com/embed/#', $blocked), 'YouTube iframe is not present before consent');
 assertTrue(str_contains($blocked, 'data-jck-youtube="dQw4w9WgXcQ"'), 'YouTube placeholder is rendered');
+assertTrue(str_contains($blocked, 'data-jck-open-prefs="1"'), 'YouTube placeholder can open preferences');
 assertTrue(str_contains($blocked, 'https://example.com/safe'), 'Unregistered iframe is left untouched');
 assertTrue(str_contains($blocked, 'data-jck-open-prefs="1"'), 'Preferences shortcode becomes a button');
 assertTrue(str_contains($blocked, 'Demo &amp; Video') || str_contains($blocked, 'Demo & Video'), 'Embed title is escaped');
@@ -165,6 +166,7 @@ foreach ($roots as $source) {
 assertTrue($hits === [], 'No site-specific or CookieYes CDN bindings in source');
 
 require __DIR__ . '/v2.php';
+require __DIR__ . '/lang.php';
 
 if ($failures > 0) {
     fwrite(STDERR, "\n{$failures} checks failed.\n");

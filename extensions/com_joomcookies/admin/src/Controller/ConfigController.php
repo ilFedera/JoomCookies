@@ -29,8 +29,8 @@ class ConfigController extends BaseController
         $data = $this->input->post->get('jform', [], 'array');
         $allowed = match ($view) {
             'banner' => ['position', 'color_background', 'color_text', 'color_accent', 'color_button_text', 'color_muted', 'show_reopen_button'],
-            'texts' => ['text_title', 'text_message', 'text_accept', 'text_reject', 'text_customize', 'text_save', 'text_close', 'text_reopen', 'text_prefs_title', 'text_cookie_link', 'text_privacy_link', 'cookie_policy_url', 'privacy_policy_url'],
-            'youtube' => ['youtube_nocookie', 'youtube_thumbnails', 'text_youtube_blocked', 'text_youtube_load', 'text_youtube_help', 'text_embed_blocked', 'text_embed_load'],
+            'texts' => ['text_title', 'text_message', 'text_accept', 'text_reject', 'text_customize', 'text_save', 'text_close', 'text_reopen', 'text_prefs_title', 'text_prefs_desc', 'text_cookie_link', 'text_privacy_link', 'cookie_policy_url', 'privacy_policy_url'],
+            'youtube' => ['youtube_nocookie', 'youtube_thumbnails', 'text_youtube_blocked', 'text_youtube_load', 'text_youtube_prefs', 'text_youtube_help', 'text_embed_blocked', 'text_embed_load'],
             'dashboard' => ['enabled', 'consent_version', 'diagnostic', 'cookie_lifetime_days'],
             'scan' => ['scan_max_pages', 'scan_max_depth', 'scan_max_seconds', 'scan_start_url'],
             'settings' => ['enabled', 'consent_version', 'cookie_lifetime_days', 'diagnostic', 'scan_max_pages', 'scan_max_depth', 'scan_max_seconds', 'scan_start_url'],
@@ -43,6 +43,10 @@ class ConfigController extends BaseController
             if (array_key_exists($key, $data)) {
                 $filtered[$key] = \is_string($data[$key]) ? trim($data[$key]) : $data[$key];
             }
+        }
+
+        if (isset($filtered['scan_max_pages'])) {
+            $filtered['scan_max_pages'] = (string) min(50, max(1, (int) $filtered['scan_max_pages']));
         }
 
         if ($filtered !== []) {

@@ -31,6 +31,21 @@ assertTrue(str_contains($pluginSrc, 'use JoomCookies\\Plugin\\System\\Joomcookie
 assertTrue(str_contains($pluginXml, '<namespace path="src">JoomCookies\\Plugin\\System\\Joomcookies</namespace>'), 'Plugin manifest registers PSR-4 namespace');
 assertTrue(class_exists(\JoomCookies\Plugin\System\Joomcookies\Service\ComponentConfigBridge::class, true), 'Bridge class autoloads');
 assertTrue(!class_exists(\JoomCookies\Plugin\System\Joomcookies\Extension\ComponentConfigBridge::class, false), 'Bridge is not registered under Extension');
+assertTrue(str_contains($pluginSrc, 'ensureFrontendAssets'), 'Plugin injects CSS/JS in onAfterRender if head assets are missing');
+assertTrue(str_contains($pluginSrc, 'onAfterDispatch'), 'Plugin registers assets before YOOtheme compiles the head');
+
+$js = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/js/joomcookies.js') ?: '';
+assertTrue(str_contains($js, 'window.JoomCookies'), 'Public JoomCookies API is exposed');
+assertTrue(str_contains($js, 'hasConsent:'), 'hasConsent is part of the public API');
+assertTrue(str_contains($js, '_attached'), 'Script guards against double initialisation');
+
+$dashboard = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/tmpl/dashboard/default.php') ?: '';
+assertTrue(!str_contains($dashboard, 'COM_JOOMCOOKIES_MIGRATION'), 'Dashboard does not show V1 migration UI');
+
+$defaults = \JoomCookies\Component\Joomcookies\Administrator\Service\DefaultCopy::settings();
+assertTrue($defaults['text_title'] === 'La tua privacy è importante', 'Default banner title is Italian');
+assertTrue(str_contains((string) $defaults['text_message'], 'solo con il tuo consenso'), 'Default banner message is Italian');
+assertTrue($defaults['text_youtube_prefs'] === 'Gestisci preferenze', 'Default YouTube preferences button is Italian');
 
 $guard = new SsrfGuard(['example.test'], false);
 assertTrue($guard->assertSafe('https://example.test/page') === 'https://example.test/page', 'Allowed host passes SSRF guard');

@@ -53,7 +53,7 @@ class ScanController extends BaseController
         }
 
         $options = [
-            'max_pages'   => (int) SettingsStore::get('scan_max_pages', 10),
+            'max_pages'   => min(50, max(1, (int) SettingsStore::get('scan_max_pages', 10))),
             'max_depth'   => (int) SettingsStore::get('scan_max_depth', 2),
             'max_seconds' => (int) SettingsStore::get('scan_max_seconds', 25),
             'timeout'     => 8,

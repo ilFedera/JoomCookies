@@ -29,9 +29,10 @@ final class ConfigBuilder
     /**
      * @param  array<string, mixed>  $data
      * @param  list<array<string, mixed>>  $extraServices
+     * @param  list<array<string, mixed>>  $categoryRows
      * @return array<string, mixed>
      */
-    public static function fromArray(array $data, string $cookiePath, array $extraServices = []): array
+    public static function fromArray(array $data, string $cookiePath, array $extraServices = [], array $categoryRows = []): array
     {
         $params = new Registry($data);
         $version = self::version($params->get('consent_version', '1'));
@@ -54,7 +55,7 @@ final class ConfigBuilder
                 'cookie'  => self::url((string) $params->get('cookie_policy_url', '')),
                 'privacy' => self::url((string) $params->get('privacy_policy_url', '')),
             ],
-            'categories'         => self::categories($params),
+            'categories'         => self::categories($params, $categoryRows),
             'services'           => $registry->forFrontend(),
             'cookie'             => [
                 'name'     => 'joomcookies_consent',
@@ -84,11 +85,12 @@ final class ConfigBuilder
         return [
             'youtube_nocookie'      => !empty($config['youtube']['nocookie']),
             'youtube_thumbnails'    => $config['youtube']['thumbnails'] ?? 'local',
-            'open_prefs_label'      => $texts['reopen'] ?? 'Cookie preferences',
-            'embed_blocked_label'   => $texts['embedBlocked'] ?? 'External content blocked',
-            'embed_load_label'      => $texts['embedLoad'] ?? 'Load content',
-            'youtube_blocked_label' => $texts['youtubeBlocked'] ?? 'YouTube video',
-            'youtube_load_label'    => $texts['youtubeLoad'] ?? 'Load video',
+            'open_prefs_label'      => $texts['reopen'] ?? Text::_('PLG_SYSTEM_JOOMCOOKIES_UI_REOPEN'),
+            'embed_blocked_label'   => $texts['embedBlocked'] ?? Text::_('PLG_SYSTEM_JOOMCOOKIES_UI_EMBED_BLOCKED'),
+            'embed_load_label'      => $texts['embedLoad'] ?? Text::_('PLG_SYSTEM_JOOMCOOKIES_UI_EMBED_LOAD'),
+            'youtube_blocked_label' => $texts['youtubeBlocked'] ?? Text::_('PLG_SYSTEM_JOOMCOOKIES_UI_YOUTUBE_BLOCKED'),
+            'youtube_load_label'    => $texts['youtubeLoad'] ?? Text::_('PLG_SYSTEM_JOOMCOOKIES_UI_YOUTUBE_LOAD'),
+            'youtube_prefs_label'   => $texts['youtubePrefs'] ?? Text::_('PLG_SYSTEM_JOOMCOOKIES_UI_YOUTUBE_PREFS'),
             'youtube_help'          => $texts['youtubeHelp'] ?? '',
         ];
     }
@@ -136,6 +138,8 @@ final class ConfigBuilder
             'close'          => self::text($params, 'text_close', 'PLG_SYSTEM_JOOMCOOKIES_UI_CLOSE'),
             'reopen'         => self::text($params, 'text_reopen', 'PLG_SYSTEM_JOOMCOOKIES_UI_REOPEN'),
             'prefsTitle'     => self::text($params, 'text_prefs_title', 'PLG_SYSTEM_JOOMCOOKIES_UI_PREFS_TITLE'),
+            'prefsDesc'      => self::htmlText($params, 'text_prefs_desc', 'PLG_SYSTEM_JOOMCOOKIES_UI_PREFS_DESC'),
+            'youtubePrefs'   => self::text($params, 'text_youtube_prefs', 'PLG_SYSTEM_JOOMCOOKIES_UI_YOUTUBE_PREFS'),
             'cookieLink'     => self::text($params, 'text_cookie_link', 'PLG_SYSTEM_JOOMCOOKIES_UI_COOKIE_LINK'),
             'privacyLink'    => self::text($params, 'text_privacy_link', 'PLG_SYSTEM_JOOMCOOKIES_UI_PRIVACY_LINK'),
             'embedBlocked'   => self::text($params, 'text_embed_blocked', 'PLG_SYSTEM_JOOMCOOKIES_UI_EMBED_BLOCKED'),
@@ -148,9 +152,10 @@ final class ConfigBuilder
     }
 
     /**
-     * @return array<string, array<string, string>>
+     * @param  list<array<string, mixed>>  $overrides
+     * @return array<string, array<string, mixed>>
      */
-    private static function categories(Registry $params): array
+    private static function categories(Registry $params, array $overrides = []): array
     {
         $map = [
             ConsentState::CATEGORY_NECESSARY  => ['label' => 'PLG_SYSTEM_JOOMCOOKIES_CAT_NECESSARY', 'desc' => 'PLG_SYSTEM_JOOMCOOKIES_CAT_NECESSARY_DESC', 'labelParam' => 'cat_necessary_label', 'descParam' => 'cat_necessary_desc'],
@@ -168,6 +173,25 @@ final class ConfigBuilder
                 'description' => self::htmlText($params, $meta['descParam'], $meta['desc']),
                 'required' => $id === ConsentState::CATEGORY_NECESSARY,
             ];
+        }
+
+        foreach ($overrides as $row) {
+            $id = preg_replace('/[^a-z]/', '', (string) ($row['alias'] ?? '')) ?? '';
+
+            if ($id === '' || !isset($categories[$id])) {
+                continue;
+            }
+
+            $title = trim(strip_tags((string) ($row['title'] ?? '')));
+            $desc  = trim((string) ($row['description'] ?? ''));
+
+            if ($title !== '') {
+                $categories[$id]['label'] = $title;
+            }
+
+            if ($desc !== '') {
+                $categories[$id]['description'] = $desc;
+            }
         }
 
         return $categories;

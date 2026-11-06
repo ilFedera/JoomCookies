@@ -44,7 +44,6 @@ class DashboardModel extends BaseDatabaseModel
             'plugin_enabled'   => $plugin && PluginHelper::isEnabled('system', 'joomcookies'),
             'enabled'          => (int) SettingsStore::get('enabled', 1) === 1,
             'consent_version'  => (string) SettingsStore::get('consent_version', '1'),
-            'migration'        => SettingsStore::get('_migration'),
             'last_scan'        => $lastScan,
             'browser_scan'     => $driver->describe(),
             'browser_available'=> $driver->isAvailable(),

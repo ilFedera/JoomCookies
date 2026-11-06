@@ -1,20 +1,21 @@
-# Documentazione tecnica JoomCookies 1.0.0
+# Documentazione tecnica JoomCookies 2.1.0
 
 ## Architettura
 
-Il package Joomla `pkg_joomcookies` installa un solo plugin di sistema namespaced:
+Il package Joomla `pkg_joomcookies` installa:
 
-`JoomCookies\Plugin\System\Joomcookies`
+- il componente `com_joomcookies` (configurazione, scansioni, amministrazione)
+- il plugin di sistema `plg_system_joomcookies` (banner, consenso, blocco preventivo)
 
-Non è richiesto un componente. La configurazione vive nei parametri del plugin, quindi è specifica dell'installazione Joomla.
+La fonte principale delle impostazioni è il componente. I parametri del plugin restano un fallback.
 
 Eventi sottoscritti tramite `SubscriberInterface` (modello Joomla 5/6):
 
 | Evento | Ruolo |
 |--------|--------|
 | `onContentPrepare` | Shortcode YouTube e pulsante preferenze negli articoli/moduli preparati |
-| `onBeforeCompileHead` | WebAssetManager: CSS/JS locali, variabili colore |
-| `onAfterRender` | Riscrittura HTML, iniezione banner e JSON di configurazione |
+| `onAfterDispatch` / `onBeforeCompileHead` (HIGH) | WebAssetManager: CSS/JS locali, variabili colore |
+| `onAfterRender` (MIN) | Riscrittura HTML, iniezione banner, JSON, CSS/JS di riserva |
 
 Il plugin gira solo nel client `site` e solo su documenti HTML. Errori interni sono assorbiti per non interrompere il sito.
 
@@ -70,7 +71,18 @@ Prima del consenso: nessun iframe, nessuna richiesta a `youtube.com` / `youtube-
 
 Dopo il consenso o al click su "Carica video": iframe verso `youtube-nocookie.com` (predefinito). Il click sul singolo video non salva il consenso di categoria; abilita solo quell'embed.
 
-Lightbox e griglie: se inizializzano gli iframe al `DOMContentLoaded`, dopo l'accettazione della categoria "contenuti esterni" può essere necessario un ricaricamento. Viene emesso l'evento `joomcookies:change`.
+API pubblica:
+
+```javascript
+window.JoomCookies.hasConsent('embeds');
+window.JoomCookies.openPreferences();
+document.addEventListener('joomcookies:change', handler);
+document.addEventListener('joomcookies:ready', handler);
+```
+
+Se YOOtheme o LiteSpeed omettono lo script in `<head>`, il plugin lo inietta prima di `</body>` con attributi `data-no-optimize`. Dopo un aggiornamento svuotare la cache HTML/JS del sito.
+
+Lightbox e griglie: se inizializzano gli iframe al `DOMContentLoaded`, dopo l'accettazione della categoria "contenuti esterni" può essere necessario un ricaricamento.
 
 ## Limiti del blocco (non universale)
 

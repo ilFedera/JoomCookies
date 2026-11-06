@@ -1,5 +1,9 @@
-(function () {
+(function (window, document) {
   'use strict';
+
+  if (window.JoomCookies && window.JoomCookies._attached) {
+    return;
+  }
 
   var STORAGE_KEY = 'joomcookies.consent';
   var root;
@@ -358,7 +362,7 @@
       c: categories
     });
 
-    document.dispatchEvent(new CustomEvent('joomcookies:change', { detail: { categories: categories } }));
+    document.dispatchEvent(new CustomEvent('joomcookies:change', { detail: { categories: categories, version: config.version } }));
 
     if (downgrade) {
       deleteCookies(optionalCookieNames());
@@ -457,29 +461,78 @@
     document.addEventListener('keydown', onKey);
   }
 
+  function currentCategories() {
+    var state = config ? readState() : null;
+    return state ? state.c : categoriesFrom(null);
+  }
+
+  function openPreferences() {
+    if (!root || !config) {
+      start();
+    }
+    if (!root) {
+      return;
+    }
+    fillToggles(currentCategories());
+    openDialog('panel');
+  }
+
   function start() {
+    if (window.JoomCookies && window.JoomCookies._booted) {
+      return;
+    }
     root = document.querySelector('[data-jck-root="1"]');
     config = loadConfig();
-    if (!root || !config || config.enabled === false) {
+    if (!root || !config || config.enabled === false || config.enabled === 0) {
       return;
     }
     banner = root.querySelector('[data-jck-banner]');
     panel = root.querySelector('[data-jck-panel]');
     overlay = root.querySelector('[data-jck-overlay]');
     bind();
+    window.JoomCookies._booted = true;
 
     var state = readState();
     if (!state) {
       fillToggles(categoriesFrom(null));
       openDialog('banner');
+      document.dispatchEvent(new CustomEvent('joomcookies:ready', { detail: { categories: categoriesFrom(null), version: config.version } }));
       return;
     }
 
     activateScripts(state.c);
     activateEmbeds(state.c);
     closeDialogs(false);
+    document.dispatchEvent(new CustomEvent('joomcookies:ready', { detail: { categories: state.c, version: config.version } }));
     log('JoomCookies: restored consent', state);
   }
 
+  window.JoomCookies = {
+    _attached: true,
+    _booted: false,
+    hasConsent: function (category) {
+      if (!config) {
+        config = loadConfig();
+      }
+      if (category === 'necessary') {
+        return true;
+      }
+      return !!currentCategories()[category];
+    },
+    getConsent: function () {
+      if (!config) {
+        config = loadConfig();
+      }
+      return currentCategories();
+    },
+    openPreferences: openPreferences,
+    version: function () {
+      if (!config) {
+        config = loadConfig();
+      }
+      return config && config.version ? String(config.version) : '';
+    }
+  };
+
   ready(start);
-})();
+})(window, document);

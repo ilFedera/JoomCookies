@@ -43,6 +43,15 @@ final class SettingsStore
         return $all[$key] ?? $default;
     }
 
+    public static function setIfMissing(string $key, mixed $value, ?DatabaseInterface $db = null): void
+    {
+        $all = self::all($db);
+
+        if (!array_key_exists($key, $all)) {
+            self::set($key, $value, $db);
+        }
+    }
+
     public static function set(string $key, mixed $value, ?DatabaseInterface $db = null): void
     {
         $db    = $db ?? Factory::getContainer()->get(DatabaseInterface::class);

@@ -33,13 +33,14 @@ final class BannerRenderer
 
         $title   = self::plain($texts['title'] ?? '');
         $message = $filter->clean((string) ($texts['message'] ?? ''), 'html');
-        $accept  = self::plain($texts['accept'] ?? 'Accept all');
-        $reject  = self::plain($texts['reject'] ?? 'Reject all');
-        $custom  = self::plain($texts['customize'] ?? 'Customize');
-        $save    = self::plain($texts['save'] ?? 'Save preferences');
-        $close   = self::plain($texts['close'] ?? 'Close');
-        $reopen  = self::plain($texts['reopen'] ?? 'Cookie preferences');
+        $accept  = self::plain($texts['accept'] ?? 'Accetta tutti');
+        $reject  = self::plain($texts['reject'] ?? 'Rifiuta tutti');
+        $custom  = self::plain($texts['customize'] ?? 'Personalizza');
+        $save    = self::plain($texts['save'] ?? 'Salva preferenze');
+        $close   = self::plain($texts['close'] ?? 'Chiudi');
+        $reopen  = self::plain($texts['reopen'] ?? 'Preferenze sulla privacy');
         $prefs   = self::plain($texts['prefsTitle'] ?? $title);
+        $prefsDesc = $filter->clean((string) ($texts['prefsDesc'] ?? ''), 'html');
 
         $policyLinks = '';
 
@@ -104,6 +105,7 @@ final class BannerRenderer
             . '<div class="jck-panel__inner">'
             . '<div class="jck-panel__head"><h2 id="jck-panel-title" class="jck-title">' . $prefs . '</h2>'
             . '<button type="button" class="jck-icon-btn" data-jck-action="close" aria-label="' . $close . '">×</button></div>'
+            . ($prefsDesc !== '' ? '<div class="jck-message">' . $prefsDesc . '</div>' : '')
             . '<div class="jck-panel__body">' . $categoryMarkup . '</div>'
             . '<div class="jck-links">' . $policyLinks . '</div>'
             . '<div class="jck-actions">'

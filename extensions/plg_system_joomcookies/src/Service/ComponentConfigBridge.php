@@ -20,7 +20,7 @@ use Joomla\Database\DatabaseInterface;
 final class ComponentConfigBridge
 {
     /**
-     * @return array{settings: array<string, mixed>, services: list<array<string, mixed>>}|null
+     * @return array{settings: array<string, mixed>, services: list<array<string, mixed>>, categories: list<array<string, mixed>>}|null>
      */
     public static function load(): ?array
     {
@@ -42,14 +42,20 @@ final class ComponentConfigBridge
             }
 
             $services = [];
+            $categories = [];
 
             if (self::tableExists($db, '#__joomcookies_services')) {
                 $services = self::approvedBlockServices($db);
             }
 
+            if (self::tableExists($db, '#__joomcookies_categories')) {
+                $categories = self::categories($db);
+            }
+
             return [
-                'settings' => $settings,
-                'services' => $services,
+                'settings'   => $settings,
+                'services'   => $services,
+                'categories' => $categories,
             ];
         } catch (\Throwable) {
             return null;
@@ -86,6 +92,21 @@ final class ComponentConfigBridge
         }
 
         return $out;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private static function categories(DatabaseInterface $db): array
+    {
+        $query = $db->getQuery(true)
+            ->select(['alias', 'title', 'description', 'required', 'ordering'])
+            ->from($db->quoteName('#__joomcookies_categories'))
+            ->where($db->quoteName('published') . ' = 1')
+            ->order($db->quoteName('ordering') . ' ASC');
+        $db->setQuery($query);
+
+        return $db->loadAssocList() ?: [];
     }
 
     /**

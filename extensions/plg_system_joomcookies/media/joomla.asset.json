@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.joomla.org/schemas/json-schema/v1/web_assets.json",
   "name": "plg_system_joomcookies",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "JoomCookies frontend assets",
   "license": "GPL-2.0-or-later",
   "assets": [
@@ -15,7 +15,10 @@
       "type": "script",
       "uri": "plg_system_joomcookies/js/joomcookies.js",
       "attributes": {
-        "defer": true
+        "defer": true,
+        "data-no-optimize": "1",
+        "data-no-defer": "1",
+        "data-cfasync": "false"
       }
     }
   ]
