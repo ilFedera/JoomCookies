@@ -762,6 +762,13 @@
     enhanceYoutubePlayers(document);
   }
 
+  function syncConsentHints(categories) {
+    document.querySelectorAll('[data-jck-consent-hint]').forEach(function (node) {
+      var category = node.getAttribute('data-jck-consent-hint');
+      node.hidden = !!(categories && categories[category]);
+    });
+  }
+
   function applyConsent(categories, options) {
     options = options || {};
     var previous = readState();
@@ -796,6 +803,7 @@
     activateScripts(categories);
     enhanceYoutubePlayers(document);
     activateEmbeds(categories);
+    syncConsentHints(categories);
     debugSnapshot('consent-applied');
     closeDialogs(false);
 
@@ -955,6 +963,7 @@
       activateScripts(state.c);
       enhanceYoutubePlayers(document);
       activateEmbeds(state.c);
+      syncConsentHints(state.c);
       closeDialogs(false);
       document.dispatchEvent(new CustomEvent('joomcookies:ready', { detail: { categories: state.c, version: config.version } }));
       debugSnapshot('consent-restored');

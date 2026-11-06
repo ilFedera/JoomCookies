@@ -26,11 +26,22 @@ include dirname(__DIR__) . '/_nav.php';
 	<div class="mb-3">
 		<label class="form-label"><?php echo Text::_('COM_JOOMCOOKIES_COL_CATEGORY'); ?></label>
 		<select class="form-select" name="jform[category]">
-			<?php foreach (['statistics', 'marketing', 'embeds'] as $cat) : ?>
+			<?php foreach (['statistics', 'marketing', 'embeds', 'unclassified'] as $cat) : ?>
 				<option value="<?php echo $cat; ?>"<?php echo (($item['category'] ?? '') === $cat) ? ' selected' : ''; ?>><?php echo $cat; ?></option>
 			<?php endforeach; ?>
 		</select>
+		<?php if (!empty($item['category_suggested'])) : ?>
+			<div class="form-text"><?php echo Text::_('COM_JOOMCOOKIES_COL_SUGGESTED'); ?>: <?php echo $this->escape((string) $item['category_suggested']); ?></div>
+		<?php endif; ?>
 	</div>
+	<?php if (!empty($item['id'])) : ?>
+		<p class="text-muted">
+			<?php echo Text::_('COM_JOOMCOOKIES_COL_STATUS'); ?>: <?php echo $this->escape((string) ($item['classification_status'] ?? '')); ?>
+			— <?php echo Text::_('COM_JOOMCOOKIES_COL_SOURCE'); ?>: <?php echo $this->escape((string) ($item['source'] ?? '')); ?>
+			— <?php echo Text::_('COM_JOOMCOOKIES_COL_EVIDENCE'); ?>: <?php echo $this->escape((string) ($item['last_evidence'] ?? '')); ?>
+			— <?php echo Text::_('COM_JOOMCOOKIES_COL_PAGES'); ?>: <?php echo (int) ($item['page_count'] ?? 0); ?>
+		</p>
+	<?php endif; ?>
 	<div class="mb-3">
 		<label class="form-label"><?php echo Text::_('COM_JOOMCOOKIES_SERVICE_MATCH_TYPE'); ?></label>
 		<select class="form-select" name="jform[match_type]">

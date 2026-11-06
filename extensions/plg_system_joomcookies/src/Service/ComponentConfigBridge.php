@@ -42,10 +42,12 @@ final class ComponentConfigBridge
             }
 
             $services = [];
+            $suppressed = [];
             $categories = [];
 
             if (self::tableExists($db, '#__joomcookies_services')) {
                 $services = self::approvedBlockServices($db);
+                $suppressed = self::suppressedBuiltinIds($db);
             }
 
             if (self::tableExists($db, '#__joomcookies_categories')) {
@@ -53,9 +55,10 @@ final class ComponentConfigBridge
             }
 
             return [
-                'settings'   => $settings,
-                'services'   => $services,
-                'categories' => $categories,
+                'settings'    => $settings,
+                'services'    => $services,
+                'suppressed'  => $suppressed,
+                'categories'  => $categories,
             ];
         } catch (\Throwable) {
             return null;
@@ -135,6 +138,27 @@ final class ComponentConfigBridge
         }
 
         return $out;
+    }
+
+    /**
+     * Built-in IDs the administrator disabled in the catalogue, so the plugin
+     * does not apply the same signature twice or after an explicit disable.
+     *
+     * @return list<string>
+     */
+    private static function suppressedBuiltinIds(DatabaseInterface $db): array
+    {
+        $query = $db->getQuery(true)
+            ->select($db->quoteName('alias'))
+            ->from($db->quoteName('#__joomcookies_services'))
+            ->where($db->quoteName('block_enabled') . ' = 0')
+            ->where(
+                '(' . $db->quoteName('approved') . ' = 1 OR ' . $db->quoteName('source') . ' = ' . $db->quote('builtin') . ')'
+            );
+        $db->setQuery($query);
+        $rows = $db->loadColumn() ?: [];
+
+        return array_values(array_filter(array_map('strval', $rows)));
     }
 
     private static function tableExists(DatabaseInterface $db, string $table): bool

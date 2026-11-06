@@ -32,6 +32,8 @@ final class HtmlGuard
      */
     private array $blocked = [];
 
+    private bool $recaptchaNotice = false;
+
     /**
      * @param  array<string, mixed>  $options
      * @param  array<string, bool>   $consent
@@ -53,6 +55,8 @@ final class HtmlGuard
 
     public function process(string $html): string
     {
+        $this->recaptchaNotice = false;
+        $this->blocked = [];
         $html = $this->replaceShortcodes($html);
         $html = $this->replacePreferenceShortcodes($html);
         $html = preg_replace_callback('#<script(\s[^>]*)?>(.*?)</script>#is', [$this, 'replaceScript'], $html) ?? $html;
@@ -110,7 +114,14 @@ final class HtmlGuard
             $extra .= ' data-jck-type="' . htmlspecialchars($originalType, ENT_QUOTES, 'UTF-8') . '"';
         }
 
-        return '<script' . $attrs . $extra . '>' . $content . '</script>';
+        $out = '<script' . $attrs . $extra . '>' . $content . '</script>';
+
+        if ($this->isRecaptchaService($hit['id']) && !$this->recaptchaNotice) {
+            $this->recaptchaNotice = true;
+            $out .= $this->recaptchaConsentNotice();
+        }
+
+        return $out;
     }
 
     /**
@@ -213,6 +224,28 @@ final class HtmlGuard
             . '<p class="jck-embed__text">' . $name . '</p>'
             . '<button type="button" class="jck-embed__button" data-jck-load-embed="1">' . $btn . '</button>'
             . '</div></div>';
+    }
+
+    private function isRecaptchaService(string $id): bool
+    {
+        return str_starts_with($id, 'recaptcha');
+    }
+
+    private function recaptchaConsentNotice(): string
+    {
+        $label = htmlspecialchars((string) ($this->options['embed_blocked_label'] ?? 'External content blocked'), ENT_QUOTES, 'UTF-8');
+        $help  = htmlspecialchars((string) ($this->options['embed_help'] ?? $this->options['youtube_help'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $prefs = htmlspecialchars((string) ($this->options['open_prefs_label'] ?? 'Cookie preferences'), ENT_QUOTES, 'UTF-8');
+
+        if ($help === '') {
+            $help = 'Authorize External content in the privacy preferences to use forms protected by reCAPTCHA.';
+        }
+
+        return '<div class="jck-embed jck-embed--notice" data-jck-consent-hint="embeds" role="status">'
+            . '<p class="jck-embed__title">' . $label . '</p>'
+            . '<p class="jck-embed__text">' . $help . '</p>'
+            . '<button type="button" class="jck-embed__button" data-jck-open-prefs="1">' . $prefs . '</button>'
+            . '</div>';
     }
 
     public function youtubePlaceholder(string $videoId, string $title = '', string $ratio = '16 / 9', string $originalAttrs = ''): string

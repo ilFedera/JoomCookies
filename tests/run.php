@@ -154,6 +154,8 @@ assertTrue($registry->matchScript($yooMedia, '')['id'] === 'yootheme-analytics',
 assertTrue($registry->matchScript('https://www.google.com/recaptcha/api.js', '')['category'] === 'embeds', 'reCAPTCHA API is consent-managed');
 assertTrue($registry->matchScript('https://www.gstatic.com/recaptcha/releases/test/recaptcha__it.js', '')['category'] === 'embeds', 'reCAPTCHA runtime is consent-managed');
 assertTrue($registry->matchScript('/media/com_convertforms/js/recaptcha_v3.js?123', '')['category'] === 'embeds', 'Convert Forms reCAPTCHA adapter is consent-managed');
+$suppressed = new ServiceRegistry([], ['youtube']);
+assertTrue($suppressed->matchFrame('https://www.youtube.com/embed/dQw4w9WgXcQ') === null, 'Disabled catalogue row suppresses the built-in YouTube rule');
 $siteOverride = new ServiceRegistry([['id' => 'custom-captcha', 'name' => 'Override', 'category' => 'marketing', 'match_type' => 'url_contains', 'match_value' => '/recaptcha/api.js', 'cookies' => '']]);
 assertTrue($siteOverride->matchScript('https://www.google.com/recaptcha/api.js', '')['id'] === 'custom-captcha', 'Approved site rule takes precedence');
 assertTrue($registry->matchScript('/media/templates/site/cassiopeia/js/template.min.js', '') === null, 'Ordinary template JS is not classified');
@@ -174,6 +176,10 @@ assertTrue(preg_match('#<script src="/media/templates/site/cassiopeia/js/templat
 assertTrue(str_contains($yooBlocked, 'data-jck-src="https://www.google.com/recaptcha/api.js"') && str_contains($yooBlocked, 'data-jck-service="recaptcha-api"'), 'reCAPTCHA blocked before consent');
 $convertFormsBlocked = $guard->process('<script src="/media/com_convertforms/js/recaptcha_v3.js?abc"></script>');
 assertTrue(str_contains($convertFormsBlocked, 'data-jck-service="recaptcha-convertforms"') && str_contains($convertFormsBlocked, 'type="text/plain"'), 'Convert Forms reCAPTCHA adapter blocked');
+assertTrue(str_contains($convertFormsBlocked, 'data-jck-consent-hint="embeds"'), 'Blocked reCAPTCHA explains how to authorize the form');
+assertTrue(!str_contains($convertFormsBlocked, '<video'), 'HtmlGuard does not invent video-tag rewrites');
+$frontendJs = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/js/joomcookies.js') ?: '';
+assertTrue(str_contains($frontendJs, 'syncConsentHints'), 'Consent hints hide after External content is allowed');
 assertTrue(str_contains($yooBlocked, 'data-jck-category="statistics"') && str_contains($yooBlocked, 'googletagmanager.com/gtag/js'), 'Inline gtag/js loader is blocked');
 assertTrue(!preg_match('#<script src="' . preg_quote($yooSrc, '#') . '"></script>#', $yooBlocked), 'YOOtheme analytics src is not left executable');
 

@@ -173,13 +173,24 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
         return $bridge['services'] ?? [];
     }
 
+    /**
+     * @return list<string>
+     */
+    private function suppressedServices(): array
+    {
+        $source = (string) $this->params->get('config_source', 'auto');
+        $bridge = ($source === 'plugin') ? null : ComponentConfigBridge::load();
+
+        return $bridge['suppressed'] ?? [];
+    }
+
     private function guard(): HtmlGuard
     {
         $config   = $this->config();
         $registry = new ServiceRegistry(array_merge(
             ConfigBuilder::services($this->params->get('services', [])),
             $this->extraServices()
-        ));
+        ), $this->suppressedServices());
 
         return new HtmlGuard($registry, ConfigBuilder::guardOptions($config), ConsentState::deniedOptional());
     }

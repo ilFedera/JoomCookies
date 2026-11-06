@@ -14,6 +14,7 @@ $texts = [
 	'text_youtube_load'    => 'COM_JOOMCOOKIES_TEXT_YOUTUBE_LOAD',
 	'text_embed_blocked'   => 'COM_JOOMCOOKIES_TEXT_EMBED_BLOCKED',
 	'text_embed_load'      => 'COM_JOOMCOOKIES_TEXT_EMBED_LOAD',
+	'text_embed_help'      => 'COM_JOOMCOOKIES_TEXT_EMBED_HELP',
 ];
 ?>
 <form action="<?php echo Route::_('index.php?option=com_joomcookies'); ?>" method="post">

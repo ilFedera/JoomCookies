@@ -17,8 +17,12 @@ include dirname(__DIR__) . '/_nav.php';
 	<thead>
 		<tr>
 			<th><?php echo Text::_('COM_JOOMCOOKIES_COL_NAME'); ?></th>
+			<th><?php echo Text::_('COM_JOOMCOOKIES_SERVICE_PROVIDER'); ?></th>
 			<th><?php echo Text::_('COM_JOOMCOOKIES_COL_SOURCE'); ?></th>
 			<th><?php echo Text::_('COM_JOOMCOOKIES_COL_CATEGORY'); ?></th>
+			<th><?php echo Text::_('COM_JOOMCOOKIES_COL_STATUS'); ?></th>
+			<th><?php echo Text::_('COM_JOOMCOOKIES_COL_PAGES'); ?></th>
+			<th><?php echo Text::_('COM_JOOMCOOKIES_COL_EVIDENCE'); ?></th>
 			<th><?php echo Text::_('COM_JOOMCOOKIES_COL_APPROVED'); ?></th>
 			<th><?php echo Text::_('COM_JOOMCOOKIES_COL_BLOCK'); ?></th>
 			<th></th>
@@ -26,6 +30,10 @@ include dirname(__DIR__) . '/_nav.php';
 	</thead>
 	<tbody>
 		<?php foreach ($this->items as $row) : ?>
+			<?php
+			$status = (string) ($row['classification_status'] ?? ((int) $row['approved'] ? 'approved' : 'review'));
+			$suggested = (string) ($row['category_suggested'] ?? '');
+			?>
 			<tr>
 				<td>
 					<a href="<?php echo Route::_('index.php?option=com_joomcookies&view=service&layout=edit&id=' . (int) $row['id']); ?>">
@@ -33,8 +41,17 @@ include dirname(__DIR__) . '/_nav.php';
 					</a>
 					<div class="small text-muted"><?php echo $this->escape((string) $row['match_value']); ?></div>
 				</td>
+				<td><?php echo $this->escape((string) ($row['provider'] ?? '')); ?></td>
 				<td><?php echo $this->escape((string) $row['source']); ?></td>
-				<td><?php echo $this->escape((string) $row['category']); ?></td>
+				<td>
+					<?php echo $this->escape((string) $row['category']); ?>
+					<?php if ($suggested !== '' && $suggested !== (string) $row['category']) : ?>
+						<div class="small text-muted"><?php echo Text::_('COM_JOOMCOOKIES_COL_SUGGESTED'); ?>: <?php echo $this->escape($suggested); ?></div>
+					<?php endif; ?>
+				</td>
+				<td><?php echo $this->escape($status); ?></td>
+				<td><?php echo (int) ($row['page_count'] ?? 0); ?></td>
+				<td><?php echo $this->escape((string) ($row['last_evidence'] ?? '')); ?></td>
 				<td><?php echo (int) $row['approved'] ? Text::_('JYES') : Text::_('JNO'); ?></td>
 				<td><?php echo (int) $row['block_enabled'] ? Text::_('JYES') : Text::_('JNO'); ?></td>
 				<td>

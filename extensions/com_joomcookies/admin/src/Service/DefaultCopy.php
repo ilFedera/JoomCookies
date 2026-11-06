@@ -44,6 +44,7 @@ final class DefaultCopy
             'text_youtube_prefs'   => 'Gestisci preferenze',
             'text_embed_blocked'   => 'Contenuto esterno bloccato',
             'text_embed_load'      => 'Carica contenuto',
+            'text_embed_help'      => 'Per usare i moduli protetti da reCAPTCHA apri le preferenze e autorizza Contenuti esterni.',
         ];
     }
 
@@ -77,7 +78,7 @@ final class DefaultCopy
             [
                 'alias'       => 'embeds',
                 'title'       => 'Contenuti esterni',
-                'description' => 'Video, mappe, social network e altri contenuti incorporati da servizi esterni. Attivati soltanto dopo il consenso.',
+                'description' => 'Video, mappe, social network, reCAPTCHA e altri contenuti incorporati da servizi esterni. Attivati soltanto dopo il consenso. Serve per inviare i moduli protetti da reCAPTCHA.',
                 'required'    => 0,
                 'ordering'    => 4,
             ],

@@ -31,17 +31,21 @@ class ServiceController extends BaseController
         $db   = Factory::getContainer()->get(DatabaseInterface::class);
         $now  = Factory::getDate()->toSql();
         $alias = preg_replace('/[^a-z0-9_-]/', '', strtolower((string) ($data['alias'] ?? '')));
+        $category = \in_array($data['category'] ?? '', ['statistics', 'marketing', 'embeds', 'unclassified'], true)
+            ? (string) $data['category']
+            : 'unclassified';
         $row = [
-            'alias'        => $alias,
-            'name'         => strip_tags((string) ($data['name'] ?? '')),
-            'provider'     => strip_tags((string) ($data['provider'] ?? '')),
-            'category'     => \in_array($data['category'] ?? '', ['statistics', 'marketing', 'embeds'], true) ? $data['category'] : 'statistics',
-            'match_type'   => \in_array($data['match_type'] ?? '', ['domain', 'url_contains', 'script_id', 'content_contains'], true) ? $data['match_type'] : 'domain',
-            'match_value'  => trim((string) ($data['match_value'] ?? '')),
-            'cookies'      => strip_tags((string) ($data['cookies'] ?? '')),
-            'notes'        => strip_tags((string) ($data['notes'] ?? '')),
-            'source'       => 'manual',
-            'modified'     => $now,
+            'alias'                 => $alias,
+            'name'                  => strip_tags((string) ($data['name'] ?? '')),
+            'provider'              => strip_tags((string) ($data['provider'] ?? '')),
+            'category'              => $category,
+            'match_type'            => \in_array($data['match_type'] ?? '', ['domain', 'url_contains', 'script_id', 'content_contains'], true) ? $data['match_type'] : 'domain',
+            'match_value'           => trim((string) ($data['match_value'] ?? '')),
+            'cookies'               => strip_tags((string) ($data['cookies'] ?? '')),
+            'notes'                 => strip_tags((string) ($data['notes'] ?? '')),
+            'source'                => 'manual',
+            'classification_status' => 'manual',
+            'modified'              => $now,
         ];
 
         if ($alias === '' || $row['match_value'] === '') {
@@ -56,7 +60,16 @@ class ServiceController extends BaseController
             foreach ($row as $key => $value) {
                 $query->set($db->quoteName($key) . ' = ' . $db->quote($value));
             }
-            $db->setQuery($query)->execute();
+            try {
+                $db->setQuery($query)->execute();
+            } catch (\Throwable $exception) {
+                unset($row['classification_status']);
+                $query = $db->getQuery(true)->update($db->quoteName('#__joomcookies_services'))->where($db->quoteName('id') . ' = ' . $id);
+                foreach ($row as $key => $value) {
+                    $query->set($db->quoteName($key) . ' = ' . $db->quote($value));
+                }
+                $db->setQuery($query)->execute();
+            }
         } else {
             $row['approved'] = 0;
             $row['block_enabled'] = 0;
@@ -130,7 +143,20 @@ class ServiceController extends BaseController
             ->update($db->quoteName('#__joomcookies_services'))
             ->set($db->quoteName($column) . ' = ' . $value)
             ->where($db->quoteName('id') . ' = ' . (int) $id);
-        $db->setQuery($query)->execute();
+
+        if ($column === 'approved' && $value === 1) {
+            $query->set($db->quoteName('classification_status') . ' = ' . $db->quote('approved'));
+        }
+
+        try {
+            $db->setQuery($query)->execute();
+        } catch (\Throwable) {
+            $query = $db->getQuery(true)
+                ->update($db->quoteName('#__joomcookies_services'))
+                ->set($db->quoteName($column) . ' = ' . $value)
+                ->where($db->quoteName('id') . ' = ' . (int) $id);
+            $db->setQuery($query)->execute();
+        }
         $this->setMessage(Text::_('COM_JOOMCOOKIES_SAVED'));
         $this->setRedirect(Route::_('index.php?option=com_joomcookies&view=services', false));
     }

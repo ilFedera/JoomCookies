@@ -1,4 +1,4 @@
-# Documentazione tecnica JoomCookies 2.2.9
+# Documentazione tecnica JoomCookies 2.2.11
 
 ## Architettura
 
@@ -121,7 +121,14 @@ Ogni URL considerato è scritto in `#__joomcookies_scan_urls` e resta consultabi
 
 Un worker Playwright non è incluso e non deve girare nella richiesta PHP dell’hosting condiviso.
 
-## Interventi in sviluppo successivi alla 2.2.9
+## Interventi della 2.2.11
+
+- `CatalogSync` registra i finding `script`/`iframe`/`preconnect`/`anomaly` in `#__joomcookies_services` a fine scansione e semina le regole incorporate.
+- Le classificazioni `manual`/`approved` non vengono sovrascritte; gli sconosciuti restano `review`.
+- Il plugin non riapplica una regola built-in se il catalogo ha già quella alias attiva, o se l'amministratore l'ha disabilitata.
+- Diagnostica: origini builtin/catalogo, abilitazione, copertura prevista, ultima evidenza HTTP. Nessun esito browser inventato.
+
+## Interventi della 2.2.10
 
 - Regole per Google reCAPTCHA e l'adapter reCAPTCHA v3 di Convert Forms, con precedenza alle regole approvate dall'amministratore.
 - Attivazione dei JS gestiti in sequenza e proxy YOOtheme `$load` ancora invocabile.

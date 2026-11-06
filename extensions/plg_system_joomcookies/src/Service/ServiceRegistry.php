@@ -21,11 +21,21 @@ final class ServiceRegistry
 
     /**
      * @param  list<array<string, mixed>>|array<string, mixed>  $configured
+     * @param  list<string>                                     $suppressedIds
      */
-    public function __construct(array $configured = [])
+    public function __construct(array $configured = [], array $suppressedIds = [])
     {
-        // Site-approved rules override generic signatures.
-        $this->services = array_merge($this->normalize($configured), self::builtIn());
+        $configured = $this->normalize($configured);
+        $skip = array_fill_keys(array_merge(array_column($configured, 'id'), $suppressedIds), true);
+        $builtIn = [];
+
+        foreach (self::builtIn() as $service) {
+            if (!isset($skip[$service['id']])) {
+                $builtIn[] = $service;
+            }
+        }
+
+        $this->services = array_merge($configured, $builtIn);
     }
 
     /**

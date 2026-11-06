@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use JoomCookies\Component\Joomcookies\Administrator\Service\Catalog\CatalogSync;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\CookieClassifier;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HtmlAnalyzer;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HttpCrawler;
@@ -121,11 +122,11 @@ $blockedFindings = HtmlAnalyzer::analyze($blockedHtml, 'https://example.test/pag
 $blockedIds = array_column($blockedFindings, 'service_id');
 assertTrue(\in_array('gtm', $blockedIds, true), 'Blocked gtag.js is still identified');
 assertTrue(\in_array('yootheme-analytics', $blockedIds, true), 'Blocked YOOtheme analytics is identified');
-assertTrue(\in_array('recaptcha', $blockedIds, true), 'reCAPTCHA script is identified');
+assertTrue(\in_array('recaptcha-api', $blockedIds, true) || \in_array('recaptcha', $blockedIds, true), 'reCAPTCHA script is identified');
 assertTrue(\in_array('youtube', $blockedIds, true) || \in_array('youtube-nocookie', $blockedIds, true), 'YouTube placeholder/iframe is identified');
 $gtmFinding = array_values(array_filter($blockedFindings, static fn ($row) => ($row['service_id'] ?? '') === 'gtm'))[0];
 assertTrue($gtmFinding['evidence_kind'] === 'blocked' && (int) $gtmFinding['observed'] === 0, 'Prior-blocked script is not marked as an observed cookie');
-assertTrue(ServiceCatalog::identify('https://www.google.com/recaptcha/api.js')['id'] === 'recaptcha', 'Catalogue maps reCAPTCHA');
+assertTrue(ServiceCatalog::identify('https://www.google.com/recaptcha/api.js')['id'] === 'recaptcha-api', 'Catalogue maps reCAPTCHA to the same id as the blocker');
 
 $redirectTransport = new class () implements HttpTransport {
     public function get(string $url, int $timeout, int $maxBytes): HttpResponse
@@ -165,3 +166,29 @@ $sql = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/s
 $updateSql = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/sql/updates/mysql/2.2.7.sql') ?: '';
 assertTrue(str_contains($sql, 'joomcookies_scan_urls') && str_contains($updateSql, 'CREATE TABLE IF NOT EXISTS'), 'URL log table is added with IF NOT EXISTS for upgrades');
 assertTrue(str_contains($sql, 'joomcookies_scan_queue') && str_contains($sql, 'joomcookies_scans'), 'Existing scan tables remain in the install schema');
+assertTrue(str_contains($sql, 'classification_status') && str_contains($sql, 'category_suggested'), 'Install schema includes catalogue classification columns');
+$update211 = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/sql/updates/mysql/2.2.11.sql') ?: '';
+assertTrue(str_contains($update211, 'ADD COLUMN `classification_status`'), '2.2.11 update SQL adds catalogue columns');
+
+$unknown = CatalogSync::draftFromFinding([
+    'type' => 'script',
+    'service_id' => '',
+    'domain' => 'cdn.example.test',
+    'category_suggested' => '',
+    'target' => 'https://cdn.example.test/widget.js',
+    'evidence_kind' => 'reference',
+]);
+assertTrue($unknown['alias'] === 'unknown-cdn-example-test', 'Unknown scripts get a stable domain alias');
+assertTrue($unknown['classification_status'] === 'review' && (int) $unknown['approved'] === 0 && (int) $unknown['block_enabled'] === 0, 'Unknown services stay in review and are not auto-blocked');
+$ga = CatalogSync::aliasFromFinding(['service_id' => 'ga', 'domain' => 'google-analytics.com']);
+assertTrue($ga === 'ga', 'Known service_id is the stable catalogue alias');
+$existing = ['approved' => 1, 'source' => 'manual', 'category' => 'marketing', 'name' => 'Keep me', 'pages' => '[]', 'classification_status' => 'manual'];
+$merged = CatalogSync::mergeScan($existing, ['name' => 'Overwrite', 'category' => 'statistics', 'category_suggested' => 'statistics', 'pages' => ['https://example.test/'], 'last_scan_id' => 9, 'last_evidence' => 'reference']);
+assertTrue($merged['name'] === 'Keep me' && $merged['category'] === 'marketing', 'Later scans do not overwrite approved/manual classifications');
+assertTrue((int) $merged['last_scan_id'] === 9 && $merged['page_count'] === 1, 'Scan evidence still updates page coverage');
+
+$video = HtmlAnalyzer::analyze('<video src="https://www.youtube.com/embed/dQw4w9WgXcQ"></video>', 'https://example.test/page', 'example.test');
+$anomalies = array_values(array_filter($video, static fn ($row) => ($row['type'] ?? '') === 'anomaly'));
+assertTrue($anomalies !== [] && !empty($anomalies[0]['meta']['malformed_video_embed']), 'YouTube /embed/ inside a video tag is flagged');
+assertTrue(empty($anomalies[0]['meta']['rewritten']), 'Malformed YouTube video tags are not rewritten');
+assertTrue(str_contains($runnerSrc, 'CatalogSync'), 'Completed scans upsert the service catalogue');

@@ -165,8 +165,8 @@ assertTrue(str_contains($pluginSrc, 'FrontendAssets::protectionAttributes'), 'In
 $assetClass = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/src/Service/FrontendAssets.php') ?: '';
 assertTrue(str_contains($assetClass, 'data-no-delay') && str_contains($assetClass, 'data-no-combine'), 'LiteSpeed delay/combine are opted out on JoomCookies assets');
 $assetJson = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/joomla.asset.json') ?: '';
-assertTrue(str_contains($assetJson, '"2.2.9"') && str_contains($assetJson, 'data-no-delay'), 'WebAsset registry versions assets and skips LiteSpeed delay');
-assertTrue(\JoomCookies\Plugin\System\Joomcookies\Service\FrontendAssets::version() === '2.2.9', 'FrontendAssets version is 2.2.9');
+assertTrue(str_contains($assetJson, '"2.2.11"') && str_contains($assetJson, 'data-no-delay'), 'WebAsset registry versions assets and skips LiteSpeed delay');
+assertTrue(\JoomCookies\Plugin\System\Joomcookies\Service\FrontendAssets::version() === '2.2.11', 'FrontendAssets version is 2.2.11');
 
 $driver = new UnavailableBrowserScanDriver();
 assertTrue($driver->isAvailable() === false, 'Browser driver is not available');

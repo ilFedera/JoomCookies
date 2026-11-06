@@ -23,7 +23,16 @@ include dirname(__DIR__) . '/_nav.php';
 				<td><?php echo $this->escape((string) $row['type']); ?></td>
 				<td><?php echo $this->escape((string) $row['name']); ?></td>
 				<td><?php echo $this->escape((string) $row['domain']); ?></td>
-				<td><?php echo ((int) $row['observed'] === 1) ? Text::_('COM_JOOMCOOKIES_OBSERVED') : Text::_('COM_JOOMCOOKIES_REFERENCE'); ?></td>
+				<td><?php
+					$kind = (string) ($row['evidence_kind'] ?? '');
+					if ($kind === 'observed' || ((int) ($row['observed'] ?? 0) === 1 && ($row['type'] ?? '') === 'cookie_header')) {
+						echo Text::_('COM_JOOMCOOKIES_EVIDENCE_SETCOOKIE');
+					} elseif ($kind === 'browser') {
+						echo Text::_('COM_JOOMCOOKIES_EVIDENCE_BROWSER');
+					} else {
+						echo Text::_('COM_JOOMCOOKIES_EVIDENCE_REFERENCE');
+					}
+				?></td>
 				<td><?php echo $this->escape((string) $row['page_url']); ?></td>
 			</tr>
 		<?php endforeach; ?>

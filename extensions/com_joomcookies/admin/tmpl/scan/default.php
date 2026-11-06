@@ -298,7 +298,7 @@ $start = (int) ($filters['start'] ?? 0);
 	</nav>
 <?php endif; ?>
 <?php
-$scanJs = rtrim(Uri::root(true), '/') . '/media/com_joomcookies/js/scan.js?v=2.2.9';
+$scanJs = rtrim(Uri::root(true), '/') . '/media/com_joomcookies/js/scan.js?v=2.2.11';
 $wa = $this->getDocument()->getWebAssetManager();
 try {
 	$wa->getRegistry()->addExtensionRegistryFile('com_joomcookies');

@@ -9,6 +9,7 @@ namespace JoomCookies\Component\Joomcookies\Administrator\Service\Scan;
 
 \defined('_JEXEC') or die;
 
+use JoomCookies\Component\Joomcookies\Administrator\Service\Catalog\CatalogSync;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Uri\Uri;
@@ -690,6 +691,16 @@ final class ScanRunner
         $summary['batch_lock_until'] = 0;
         $summary['complete_reason'] = $completeReason !== '' ? $completeReason : (string) ($summary['complete_reason'] ?? '');
         $this->writeSummary($scanId, $summary, true);
+        $this->syncCatalog($scanId);
+    }
+
+    private function syncCatalog(int $scanId): void
+    {
+        try {
+            (new CatalogSync($this->db))->importScan($scanId);
+        } catch (\Throwable) {
+            // Catalogue sync must not fail the scan job.
+        }
     }
 
     /**

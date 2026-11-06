@@ -1,10 +1,20 @@
 # Changelog
 
-## In sviluppo dopo 2.2.9 — non ancora rilasciato
+## 2.2.11 — 2026-11-06
+
+- Catalogo servizi popolato dalla scansione (ID stabile, niente duplicati) e dalle regole incorporate, senza sovrascrivere classificazioni manuali o approvate.
+- I servizi sconosciuti restano da verificare e non sono trattati come necessari né bloccati automaticamente.
+- Panoramica, Servizi e Diagnostica mostrano classificazione proposta/approvata, evidenza, pagine, regola e se il blocco è stato visto in scansione HTTP.
+- Cookie: distinzione Set-Cookie / riferimento nel codice / browser (quest’ultimo solo se la scansione browser è realmente disponibile).
+- reCAPTCHA e Convert Forms restano in Contenuti esterni, con avviso per autorizzare i moduli; YouTube `<video src=".../embed/">` segnalato senza riscrittura.
+- Schema `#__joomcookies_services` esteso in modo versionato (2.2.11.sql).
+
+## 2.2.10 — 2026-11-06
 
 - Riconoscimento/blocco di Google reCAPTCHA e Convert Forms nella categoria contenuti esterni.
 - Script autorizzati riattivati in ordine, con attesa delle dipendenze esterne e compatibilità callable `$load` YOOtheme.
 - Blocco dei pulsanti di caricamento degli iframe generici prima del consenso.
+- Scanner e motore di blocco allineati sulla classificazione reCAPTCHA.
 - Restano da verificare in browser attivazione GA, invio Convert Forms e copertura generale.
 
 

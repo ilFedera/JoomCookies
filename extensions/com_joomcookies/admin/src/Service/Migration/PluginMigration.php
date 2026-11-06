@@ -135,6 +135,7 @@ final class PluginMigration
             'text_prefs_desc',
             'text_embed_blocked',
             'text_embed_load',
+            'text_embed_help',
             'services',
         ];
     }

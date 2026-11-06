@@ -20,6 +20,7 @@ final class HtmlAnalyzer
         $findings = array_merge($findings, self::scripts($html, $pageUrl, $pageHost));
         $findings = array_merge($findings, self::iframes($html, $pageUrl, $pageHost));
         $findings = array_merge($findings, self::youtubePlayers($html, $pageUrl, $pageHost));
+        $findings = array_merge($findings, self::malformedYoutubeVideos($html, $pageUrl));
         $findings = array_merge($findings, self::preconnects($html, $pageUrl, $pageHost));
         $findings = array_merge($findings, self::codeReferences($html, $pageUrl));
 
@@ -258,6 +259,41 @@ final class HtmlAnalyzer
                     : '',
             ]);
             }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private static function malformedYoutubeVideos(string $html, string $pageUrl): array
+    {
+        $out = [];
+
+        if (preg_match_all('#<video\b([^>]*)>(.*?)</video>#is', $html, $matches, PREG_SET_ORDER) === false) {
+            return $out;
+        }
+
+        foreach ($matches as $match) {
+            $attrs = $match[1] ?? '';
+            $inner = $match[2] ?? '';
+            $src = self::attr($attrs, 'src');
+
+            if ($src === '' && preg_match('#<source\b[^>]*\ssrc=("([^"]*)"|\'([^\']*)\')#i', $inner, $source) === 1) {
+                $src = html_entity_decode($source[2] !== '' ? $source[2] : $source[3], ENT_QUOTES, 'UTF-8');
+            }
+
+            if ($src === '' || !preg_match('#youtube(?:-nocookie)?\.com/.*/?embed/#i', $src)) {
+                continue;
+            }
+
+            $hit = ServiceCatalog::identify($src, '');
+            $out[] = self::finding('anomaly', $hit['id'] ?? 'youtube', $src, $pageUrl, $hit, 'reference', [
+                'malformed_video_embed' => true,
+                'rewritten'             => false,
+                'note'                  => 'A <video> element points at a YouTube /embed/ URL. Flagged only; markup is not rewritten.',
+            ]);
         }
 
         return $out;
