@@ -17,13 +17,13 @@ Ambiente richiesto: Joomla 5 e, se disponibile, Joomla 6. Finestra anonima, DevT
 - [ ] Cookie `joomcookies_consent` presente, categorie facoltative a false, campo versione e timestamp valorizzati.
 - [ ] Ricaricando la pagina il banner non ricompare.
 - [ ] Gli script statistica/marketing restano `type="text/plain"`.
-- [ ] Un click su "Carica video" crea l'iframe di quel solo video.
+- [ ] Un click su "Carica il video" senza consenso apre le preferenze e non crea l'iframe.
 
 ## Dopo Accetta tutti
 
 - [ ] Partono gli script registrati (una sola volta ciascuno).
-- [ ] I player YouTube si caricano da `youtube-nocookie.com` se l'opzione è attiva.
-- [ ] Lightbox/griglia: verificare se gli iframe sono visibili; se il lightbox era già inizializzato, ricaricare la pagina.
+- [ ] I player YouTube **non** partono da soli: compare "Carica il video". Dopo il clic il player usa `youtube-nocookie.com` se l'opzione è attiva.
+- [ ] Lightbox/griglia: i segnaposto restano 16:9 e leggibili; il video parte solo dopo il clic esplicito.
 
 ## Revoca
 

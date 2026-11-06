@@ -29,6 +29,20 @@
   <p class="filler">Blocco 10 per verificare lo scroll della pagina sotto il banner.</p>
   <p class="filler">Blocco 11 per verificare lo scroll della pagina sotto il banner.</p>
   <p class="filler">Blocco 12 per verificare lo scroll della pagina sotto il banner.</p>
+  <style>
+    .yt-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; max-width: 960px; }
+    .yt-grid .youtube-player { width: 100%; }
+    .yt-single { max-width: 720px; margin: 1.5rem 0; }
+    @media (max-width: 720px) { .yt-grid { grid-template-columns: 1fr; } }
+  </style>
+  <h2>Griglia YouTube</h2>
+  <div class="yt-grid">
+    <div class="youtube-player" data-id="dQw4w9WgXcQ"></div>
+    <div class="youtube-player" data-id="https://youtu.be/dQw4w9WgXcQ"></div>
+    <div class="youtube-player" data-id="dQw4w9WgXcQ"></div>
+  </div>
+  <h2>Video singolo</h2>
+  <div class="yt-single youtube-player" data-id="dQw4w9WgXcQ"></div>
   <div id="video-slot">
     <div class="jck-embed jck-embed--youtube" data-jck-embed="1" data-jck-youtube="dQw4w9WgXcQ" data-jck-category="embeds" data-jck-service="youtube" data-jck-iframe="{&quot;src&quot;:&quot;https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ&quot;,&quot;title&quot;:&quot;Demo&quot;,&quot;attrs&quot;:{},&quot;category&quot;:&quot;embeds&quot;,&quot;service&quot;:&quot;youtube&quot;,&quot;videoId&quot;:&quot;dQw4w9WgXcQ&quot;}" style="--jck-ratio:16 / 9" role="group" aria-label="Video YouTube">
       <div class="jck-embed__surface">

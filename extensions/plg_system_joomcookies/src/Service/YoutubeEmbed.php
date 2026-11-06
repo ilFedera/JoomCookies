@@ -18,10 +18,14 @@ final class YoutubeEmbed
 
     public static function videoId(string $value): ?string
     {
-        $value = trim($value);
+        $value = trim(html_entity_decode($value, ENT_QUOTES, 'UTF-8'));
 
         if (preg_match('/^[A-Za-z0-9_-]{11}$/', $value) === 1) {
             return $value;
+        }
+
+        if (!preg_match('#^https?://#i', $value) && preg_match('#^(www\.)?(youtube\.com|youtu\.be|youtube-nocookie\.com)/#i', $value) === 1) {
+            $value = 'https://' . $value;
         }
 
         $parts = parse_url($value);
@@ -34,7 +38,8 @@ final class YoutubeEmbed
         $path = (string) ($parts['path'] ?? '');
 
         if (str_contains($host, 'youtu.be')) {
-            $id = trim($path, '/');
+            $segments = array_values(array_filter(explode('/', trim($path, '/'))));
+            $id = $segments[0] ?? '';
 
             return preg_match('/^[A-Za-z0-9_-]{11}$/', $id) === 1 ? $id : null;
         }

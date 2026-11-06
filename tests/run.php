@@ -66,6 +66,8 @@ assertTrue(YoutubeEmbed::videoId('dQw4w9WgXcQ') === 'dQw4w9WgXcQ', 'Plain YouTub
 assertTrue(YoutubeEmbed::videoId('https://www.youtube.com/watch?v=dQw4w9WgXcQ') === 'dQw4w9WgXcQ', 'Watch URL');
 assertTrue(YoutubeEmbed::videoId('https://youtu.be/dQw4w9WgXcQ') === 'dQw4w9WgXcQ', 'Short URL');
 assertTrue(YoutubeEmbed::videoId('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ') === 'dQw4w9WgXcQ', 'Embed URL');
+assertTrue(YoutubeEmbed::videoId('https://youtu.be/dQw4w9WgXcQ?t=12') === 'dQw4w9WgXcQ', 'Short URL with extra path data');
+assertTrue(YoutubeEmbed::videoId('youtube.com/watch?v=dQw4w9WgXcQ') === 'dQw4w9WgXcQ', 'Scheme-less watch URL');
 assertTrue(YoutubeEmbed::videoId('https://evil.example/dQw4w9WgXcQ') === null, 'Unknown host rejected');
 assertTrue(YoutubeEmbed::videoId('not-an-id') === null, 'Invalid id rejected');
 assertTrue(str_contains(YoutubeEmbed::playerSrc('dQw4w9WgXcQ', true), 'youtube-nocookie.com'), 'Privacy host used');
@@ -90,6 +92,7 @@ $html = <<<HTML
 <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Demo &amp; Video"></iframe>
 <iframe src="https://example.com/safe"></iframe>
 {joomcookies youtube="dQw4w9WgXcQ" title="Article video"}
+<div class="youtube-player" data-id="dQw4w9WgXcQ"></div>
 {joomcookies-preferences}
 <script id="safe-inline">window.siteReady = true;</script>
 </body></html>
@@ -116,6 +119,8 @@ assertTrue(str_contains($blocked, "gtag('config','G-TEST')") && str_contains($bl
 assertTrue(!preg_match('#<iframe[^>]+src="https://www.youtube.com/embed/#', $blocked), 'YouTube iframe is not present before consent');
 assertTrue(str_contains($blocked, 'data-jck-youtube="dQw4w9WgXcQ"'), 'YouTube placeholder is rendered');
 assertTrue(str_contains($blocked, 'data-jck-open-prefs="1"'), 'YouTube placeholder can open preferences');
+assertTrue(str_contains($blocked, 'data-jck-yt="1"') && str_contains($blocked, 'youtube-player'), 'Existing youtube-player containers are enhanced');
+assertTrue(!str_contains($blocked, 'i.ytimg.com'), 'YouTube placeholders do not request thumbnails');
 assertTrue(str_contains($blocked, 'https://example.com/safe'), 'Unregistered iframe is left untouched');
 assertTrue(str_contains($blocked, 'data-jck-open-prefs="1"'), 'Preferences shortcode becomes a button');
 assertTrue(str_contains($blocked, 'Demo &amp; Video') || str_contains($blocked, 'Demo & Video'), 'Embed title is escaped');

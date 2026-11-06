@@ -9,6 +9,7 @@ namespace JoomCookies\Component\Joomcookies\Administrator\Model;
 
 \defined('_JEXEC') or die;
 
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\FindingAggregator;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanComparer;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\UnavailableBrowserScanDriver;
 use JoomCookies\Component\Joomcookies\Administrator\Service\SettingsStore;
@@ -58,7 +59,8 @@ class ScanModel extends BaseDatabaseModel
                     ->from($db->quoteName('#__joomcookies_findings'))
                     ->where($db->quoteName('scan_id') . ' = ' . (int) $scans[1]['id']);
                 $db->setQuery($query);
-                $diff = ScanComparer::diff($db->loadAssocList() ?: [], $findings);
+                $currentComplete = ((string) ($current['status'] ?? '') === 'complete');
+                $diff = ScanComparer::diff($db->loadAssocList() ?: [], $findings, $currentComplete);
             }
         }
 
@@ -70,19 +72,22 @@ class ScanModel extends BaseDatabaseModel
             $summary = \is_array($decoded) ? $decoded : [];
         }
 
+        $grouped = FindingAggregator::group($findings);
+
         return [
             'start_url' => (string) SettingsStore::get('scan_start_url', Uri::root()),
             'scans'     => $scans,
             'current'   => $current,
-            'findings'  => $findings,
-            'stats'     => self::stats($findings, $summary),
+            'findings'  => $grouped,
+            'stats'     => self::stats($grouped, $summary),
+            'progress'  => $summary,
             'diff'      => $diff,
             'browser'   => $driver->describe(),
             'browser_available' => $driver->isAvailable(),
             'limits'    => [
-                'max_pages'   => min(50, max(1, (int) SettingsStore::get('scan_max_pages', 10))),
+                'max_pages'   => max(1, min(5000, (int) SettingsStore::get('scan_max_pages', 50))),
                 'max_depth'   => SettingsStore::get('scan_max_depth', 2),
-                'max_seconds' => SettingsStore::get('scan_max_seconds', 25),
+                'max_seconds' => SettingsStore::get('scan_max_seconds', 12),
             ],
         ];
     }
@@ -98,6 +103,7 @@ class ScanModel extends BaseDatabaseModel
         $stats = [
             'pages'            => (int) ($summary['pages'] ?? 0),
             'cookie_observed'  => 0,
+            'cookie_browser'   => 0,
             'cookie_reference' => 0,
             'script'           => 0,
             'iframe'           => 0,

@@ -1,4 +1,4 @@
-# Documentazione tecnica JoomCookies 2.1.0
+# Documentazione tecnica JoomCookies 2.2.0
 
 ## Architettura
 

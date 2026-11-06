@@ -58,6 +58,7 @@ final class HtmlGuard
         $html = preg_replace_callback('#<script(\s[^>]*)?>(.*?)</script>#is', [$this, 'replaceScript'], $html) ?? $html;
         $html = preg_replace_callback('#<iframe(\s[^>]*)?>.*?</iframe>#is', [$this, 'replaceIframe'], $html) ?? $html;
         $html = preg_replace_callback('#<iframe(\s[^>]*)?/>#is', [$this, 'replaceIframe'], $html) ?? $html;
+        $html = $this->enhanceYoutubePlayers($html);
 
         return $html;
     }
@@ -241,28 +242,59 @@ final class HtmlGuard
         ], JSON_UNESCAPED_SLASHES) ?: '{}', ENT_QUOTES, 'UTF-8');
 
         $label   = $title !== '' ? $title : (string) ($this->options['youtube_blocked_label'] ?? 'Video YouTube bloccato');
-        $btn     = htmlspecialchars((string) ($this->options['youtube_load_label'] ?? 'Carica video'), ENT_QUOTES, 'UTF-8');
         $prefs   = htmlspecialchars((string) ($this->options['youtube_prefs_label'] ?? 'Gestisci preferenze'), ENT_QUOTES, 'UTF-8');
-        $help    = htmlspecialchars((string) ($this->options['youtube_help'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $help    = htmlspecialchars((string) ($this->options['youtube_help'] ?? 'Attiva i contenuti esterni per visualizzarlo.'), ENT_QUOTES, 'UTF-8');
         $safeId  = htmlspecialchars($videoId, ENT_QUOTES, 'UTF-8');
         $safeLab = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
-        $thumb   = '';
-
-        if (($this->options['youtube_thumbnails'] ?? 'local') === 'youtube') {
-            $thumb = ' style="background-image:url(\'' . htmlspecialchars(YoutubeEmbed::thumbnailUrl($videoId), ENT_QUOTES, 'UTF-8') . '\')"';
-        }
+        $icon    = '<span class="jck-embed__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" focusable="false"><path fill="currentColor" d="M8 5v14l11-7z"/></svg></span>';
 
         return '<div class="jck-embed jck-embed--youtube" data-jck-embed="1" data-jck-youtube="' . $safeId
             . '" data-jck-category="embeds" data-jck-service="youtube" data-jck-iframe="' . $payload
             . '" style="--jck-ratio:' . htmlspecialchars($ratio, ENT_QUOTES, 'UTF-8') . '"'
             . ' role="group" aria-label="' . $safeLab . '">'
-            . '<div class="jck-embed__surface"' . $thumb . '>'
-            . '<div class="jck-embed__panel"><p class="jck-embed__title">' . $safeLab . '</p>'
+            . '<div class="jck-embed__surface">'
+            . '<div class="jck-embed__panel">' . $icon
+            . '<p class="jck-embed__title">' . $safeLab . '</p>'
             . ($help !== '' ? '<p class="jck-embed__text">' . $help . '</p>' : '')
             . '<div class="jck-embed__actions">'
-            . '<button type="button" class="jck-embed__button jck-embed__button--ghost" data-jck-open-prefs="1">' . $prefs . '</button>'
-            . '<button type="button" class="jck-embed__button" data-jck-load-embed="1">' . $btn . '</button>'
+            . '<button type="button" class="jck-embed__button" data-jck-open-prefs="1">' . $prefs . '</button>'
             . '</div></div></div></div>';
+    }
+
+    public function enhanceYoutubePlayers(string $html): string
+    {
+        return preg_replace_callback(
+            '#<div\b([^>]*\byoutube-player\b[^>]*)>(.*?)</div>#is',
+            function (array $match): string {
+                $attributes = $match[1] ?? '';
+                $inner      = $match[2] ?? '';
+
+                if ($this->attribute($attributes, 'data-jck-yt') !== '' || str_contains($inner, 'data-jck-youtube')) {
+                    return $match[0];
+                }
+
+                $videoId = YoutubeEmbed::videoId($this->attribute($attributes, 'data-id'));
+
+                if ($videoId === null) {
+                    return $match[0];
+                }
+
+                $this->blocked[] = [
+                    'type'     => 'youtube-player',
+                    'service'  => 'youtube',
+                    'category' => ConsentState::CATEGORY_EMBEDS,
+                    'src'      => $videoId,
+                ];
+
+                $attrs = trim($attributes);
+                if (!str_contains($attrs, 'data-jck-yt=')) {
+                    $attrs .= ' data-jck-yt="1"';
+                }
+
+                return '<div ' . $attrs . '>' . $this->youtubePlaceholder($videoId, '', '16 / 9') . '</div>';
+            },
+            $html
+        ) ?? $html;
     }
 
     public function youtubePlayer(string $videoId, string $title = '', string $ratio = '16 / 9'): string

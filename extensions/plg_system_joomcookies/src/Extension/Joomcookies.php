@@ -241,7 +241,7 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
         $base = rtrim(Uri::root(true), '/') . '/media/plg_system_joomcookies';
         $css  = $base . '/css/joomcookies.css';
         $js   = $base . '/js/joomcookies.js';
-        $ver  = '2.1.1';
+        $ver  = '2.2.0';
 
         if (!preg_match('#plg_system_joomcookies/css/joomcookies\.css#i', $body)) {
             $link = '<link rel="stylesheet" href="' . htmlspecialchars($css, ENT_QUOTES, 'UTF-8')

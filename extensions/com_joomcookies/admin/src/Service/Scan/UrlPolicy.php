@@ -35,6 +35,11 @@ final class UrlPolicy
         'token=',
         'return=',
         'remember=',
+        'option=com_users',
+        'option=com_privacy',
+        'option=com_config',
+        'option=com_joomlaupdate',
+        'option=com_login',
     ];
 
     public static function isSafeToCrawl(string $url): bool
@@ -83,10 +88,20 @@ final class UrlPolicy
         $scheme = strtolower((string) ($parts['scheme'] ?? 'https'));
         $host   = strtolower((string) $parts['host']);
         $path   = $parts['path'] ?? '/';
-        $query  = isset($parts['query']) ? '?' . $parts['query'] : '';
+        $query  = '';
 
         if ($path === '') {
             $path = '/';
+        }
+
+        if (isset($parts['query']) && $parts['query'] !== '') {
+            parse_str((string) $parts['query'], $params);
+            foreach (['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', 'mc_cid', 'mc_eid'] as $drop) {
+                unset($params[$drop]);
+            }
+            if ($params !== []) {
+                $query = '?' . http_build_query($params);
+            }
         }
 
         return $scheme . '://' . $host . $path . $query;

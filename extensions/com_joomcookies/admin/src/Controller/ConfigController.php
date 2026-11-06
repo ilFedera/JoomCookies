@@ -46,7 +46,7 @@ class ConfigController extends BaseController
         }
 
         if (isset($filtered['scan_max_pages'])) {
-            $filtered['scan_max_pages'] = (string) min(50, max(1, (int) $filtered['scan_max_pages']));
+            $filtered['scan_max_pages'] = (string) min(5000, max(1, (int) $filtered['scan_max_pages']));
         }
 
         if ($filtered !== []) {

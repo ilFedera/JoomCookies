@@ -16,7 +16,7 @@ final class ScanComparer
      * @param  list<array<string, mixed>>  $current
      * @return array{added: list<array<string, mixed>>, removed: list<array<string, mixed>>, unchanged: int}
      */
-    public static function diff(array $previous, array $current): array
+    public static function diff(array $previous, array $current, bool $currentComplete = true): array
     {
         $prevKeys = [];
         $currKeys = [];
@@ -44,10 +44,15 @@ final class ScanComparer
             }
         }
 
+        if (!$currentComplete) {
+            $removed = [];
+        }
+
         return [
             'added'     => $added,
             'removed'   => $removed,
             'unchanged' => \count($currKeys) - \count($added),
+            'incomplete' => !$currentComplete,
         ];
     }
 

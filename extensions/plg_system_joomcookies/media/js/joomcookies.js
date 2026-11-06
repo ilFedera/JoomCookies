@@ -346,35 +346,192 @@
     return iframe;
   }
 
+  function parseEmbedPayload(node) {
+    var raw = node.getAttribute('data-jck-iframe');
+    if (!raw) {
+      return null;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function isYoutubeEmbed(node) {
+    return node.getAttribute('data-jck-service') === 'youtube' || node.hasAttribute('data-jck-youtube');
+  }
+
+  function youtubeTexts() {
+    var texts = (config && config.texts) || {};
+    return {
+      title: texts.youtubeBlocked || 'Video YouTube bloccato',
+      help: texts.youtubeHelp || 'Attiva i contenuti esterni per visualizzarlo.',
+      prefs: texts.youtubePrefs || 'Gestisci preferenze',
+      load: texts.youtubeLoad || 'Carica il video'
+    };
+  }
+
+  function youtubeIdFromValue(value) {
+    value = (value || '').trim();
+    if (/^[A-Za-z0-9_-]{11}$/.test(value)) {
+      return value;
+    }
+    var match = value.match(/[?&]v=([A-Za-z0-9_-]{11})/)
+      || value.match(/youtu\.be\/([A-Za-z0-9_-]{11})/)
+      || value.match(/\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{11})/);
+    return match ? match[1] : '';
+  }
+
+  function youtubePlayerSrc(videoId) {
+    var host = config && config.youtube && config.youtube.nocookie === false
+      ? 'https://www.youtube.com'
+      : 'https://www.youtube-nocookie.com';
+    return host + '/embed/' + encodeURIComponent(videoId);
+  }
+
+  function renderYoutubePlaceholder(node, videoId) {
+    var texts = youtubeTexts();
+    var payload = {
+      src: youtubePlayerSrc(videoId),
+      title: texts.title,
+      attrs: {},
+      category: 'embeds',
+      service: 'youtube',
+      videoId: videoId
+    };
+    node.setAttribute('data-jck-embed', '1');
+    node.setAttribute('data-jck-youtube', videoId);
+    node.setAttribute('data-jck-category', 'embeds');
+    node.setAttribute('data-jck-service', 'youtube');
+    node.setAttribute('data-jck-iframe', JSON.stringify(payload));
+    node.classList.add('jck-embed', 'jck-embed--youtube');
+    node.style.setProperty('--jck-ratio', '16 / 9');
+    node.setAttribute('role', 'group');
+    node.setAttribute('aria-label', texts.title);
+    node.innerHTML = ''
+      + '<div class="jck-embed__surface"><div class="jck-embed__panel">'
+      + '<span class="jck-embed__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" focusable="false"><path fill="currentColor" d="M8 5v14l11-7z"></path></svg></span>'
+      + '<p class="jck-embed__title">' + texts.title + '</p>'
+      + '<p class="jck-embed__text">' + texts.help + '</p>'
+      + '<div class="jck-embed__actions"></div></div></div>';
+    refreshYoutubeActions(node);
+  }
+
+  function refreshYoutubeActions(node) {
+    if (!isYoutubeEmbed(node) || node.getAttribute('data-jck-loaded') === '1') {
+      return;
+    }
+    var actions = node.querySelector('.jck-embed__actions');
+    if (!actions) {
+      return;
+    }
+    var texts = youtubeTexts();
+    var allowed = currentCategories().embeds;
+    actions.innerHTML = '<button type="button" class="jck-embed__button' + (allowed ? ' jck-embed__button--ghost' : '') + '" data-jck-open-prefs="1">' + texts.prefs + '</button>';
+    if (allowed) {
+      actions.innerHTML += '<button type="button" class="jck-embed__button" data-jck-load-embed="1">' + texts.load + '</button>';
+    }
+  }
+
+  function enhanceYoutubePlayers(rootNode) {
+    var scope = rootNode && rootNode.querySelectorAll ? rootNode : document;
+    var nodes = [];
+    if (rootNode && rootNode.nodeType === 1 && rootNode.classList && rootNode.classList.contains('youtube-player')) {
+      nodes.push(rootNode);
+    }
+    scope.querySelectorAll('.youtube-player').forEach(function (node) {
+      nodes.push(node);
+    });
+    nodes.forEach(function (host) {
+      if (host.getAttribute('data-jck-yt') === '1' && host.querySelector('[data-jck-youtube]')) {
+        refreshYoutubeActions(host.querySelector('[data-jck-youtube]'));
+        return;
+      }
+      if (host.hasAttribute('data-jck-youtube')) {
+        refreshYoutubeActions(host);
+        return;
+      }
+      var videoId = youtubeIdFromValue(host.getAttribute('data-id') || '');
+      if (!videoId) {
+        return;
+      }
+      host.setAttribute('data-jck-yt', '1');
+      renderYoutubePlaceholder(host, videoId);
+    });
+    document.querySelectorAll('[data-jck-youtube]').forEach(refreshYoutubeActions);
+  }
+
+  function observeDynamicContent() {
+    if (window.JoomCookies && window.JoomCookies._observer) {
+      return;
+    }
+    if (!window.MutationObserver) {
+      return;
+    }
+    var observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        mutation.addedNodes.forEach(function (node) {
+          if (node.nodeType === 1) {
+            enhanceYoutubePlayers(node);
+          }
+        });
+      });
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    if (window.JoomCookies) {
+      window.JoomCookies._observer = observer;
+    }
+  }
+
+  function loadEmbed(node) {
+    if (!node) {
+      return;
+    }
+    if (isYoutubeEmbed(node) && !currentCategories().embeds) {
+      openPreferences();
+      return;
+    }
+    if (node.getAttribute('data-jck-loaded') === '1') {
+      return;
+    }
+    var payload = parseEmbedPayload(node);
+    if (!payload || !payload.src) {
+      return;
+    }
+    var iframe = iframeFromPayload(payload);
+    node.setAttribute('data-jck-loaded', '1');
+    node.classList.add('jck-embed--active');
+    node.innerHTML = '';
+    node.appendChild(iframe);
+    log('JoomCookies: activated embed', payload.service || node.getAttribute('data-jck-category'), payload.src);
+  }
+
   function activateEmbeds(categories, onlyNode) {
     var nodes = onlyNode ? [onlyNode] : document.querySelectorAll('[data-jck-embed="1"]');
     nodes.forEach(function (node) {
       var category = node.getAttribute('data-jck-category') || 'embeds';
-      if (!onlyNode && !categories[category]) {
+      if (!categories[category]) {
         return;
       }
-      if (node.getAttribute('data-jck-loaded') === '1') {
+      if (isYoutubeEmbed(node) && !onlyNode) {
+        refreshYoutubeActions(node);
         return;
       }
-      var raw = node.getAttribute('data-jck-iframe');
-      if (!raw) {
-        return;
-      }
-      var payload;
-      try {
-        payload = JSON.parse(raw);
-      } catch (e) {
-        return;
-      }
-      if (!payload || !payload.src) {
-        return;
-      }
-      var iframe = iframeFromPayload(payload);
-      node.setAttribute('data-jck-loaded', '1');
-      node.classList.add('jck-embed--active');
-      node.innerHTML = '';
-      node.appendChild(iframe);
-      log('JoomCookies: activated embed', payload.service || category, payload.src);
+      loadEmbed(node);
+    });
+  }
+
+  function stopManagedPlayers() {
+    document.querySelectorAll('[data-jck-embed="1"][data-jck-loaded="1"]').forEach(function (node) {
+      node.querySelectorAll('iframe').forEach(function (frame) {
+        frame.removeAttribute('src');
+        if (frame.parentNode) {
+          frame.parentNode.removeChild(frame);
+        }
+      });
+      node.removeAttribute('data-jck-loaded');
+      node.classList.remove('jck-embed--active');
     });
   }
 
@@ -397,6 +554,7 @@
 
     if (downgrade) {
       deleteCookies(optionalCookieNames());
+      stopManagedPlayers();
       if (config.reloadOnRevoke !== false) {
         location.reload();
         return;
@@ -405,6 +563,7 @@
 
     activateScripts(categories);
     activateEmbeds(categories);
+    enhanceYoutubePlayers(document);
     closeDialogs(false);
 
     if (options.reload) {
@@ -485,7 +644,8 @@
       }
       var loadBtn = event.target.closest('[data-jck-load-embed]');
       if (loadBtn) {
-        activateEmbeds(categoriesFrom({ embeds: true }), loadBtn.closest('[data-jck-embed="1"]'));
+        event.preventDefault();
+        loadEmbed(loadBtn.closest('[data-jck-embed="1"]'));
       }
     });
 
@@ -526,6 +686,8 @@
       banner.addEventListener('wheel', forwardPageScroll, { passive: true });
     }
     window.JoomCookies._booted = true;
+    enhanceYoutubePlayers(document);
+    observeDynamicContent();
 
     var state = readState();
     if (!state) {
@@ -537,6 +699,7 @@
 
     activateScripts(state.c);
     activateEmbeds(state.c);
+    enhanceYoutubePlayers(document);
     closeDialogs(false);
     document.dispatchEvent(new CustomEvent('joomcookies:ready', { detail: { categories: state.c, version: config.version } }));
     log('JoomCookies: restored consent', state);

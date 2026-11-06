@@ -19,6 +19,7 @@ final class HtmlAnalyzer
         $findings = [];
         $findings = array_merge($findings, self::scripts($html, $pageUrl, $pageHost));
         $findings = array_merge($findings, self::iframes($html, $pageUrl, $pageHost));
+        $findings = array_merge($findings, self::youtubePlayers($html, $pageUrl, $pageHost));
         $findings = array_merge($findings, self::preconnects($html, $pageUrl, $pageHost));
         $findings = array_merge($findings, self::codeReferences($html, $pageUrl));
 
@@ -53,7 +54,44 @@ final class HtmlAnalyzer
             }
         }
 
+        foreach (self::canonicalUrls($html, $baseUrl, $guard) as $canonical) {
+            $links[] = $canonical;
+        }
+
         return array_values(array_unique($links));
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function canonicalUrls(string $html, string $baseUrl, SsrfGuard $guard): array
+    {
+        $urls = [];
+
+        if (preg_match_all('/<link\s[^>]*rel=("canonical"|\'canonical\')[^>]*>/i', $html, $matches) === false) {
+            return $urls;
+        }
+
+        foreach ($matches[0] as $tag) {
+            $href = self::attr($tag, 'href');
+            $abs  = self::absolutize($href, $baseUrl);
+
+            if ($abs === null) {
+                continue;
+            }
+
+            try {
+                $safe = $guard->assertSafe($abs);
+            } catch (\InvalidArgumentException) {
+                continue;
+            }
+
+            if (UrlPolicy::isSafeToCrawl($safe)) {
+                $urls[] = UrlPolicy::normalize($safe);
+            }
+        }
+
+        return array_values(array_unique($urls));
     }
 
     /**
@@ -118,6 +156,37 @@ final class HtmlAnalyzer
                     'inline'    => $src === '',
                 ]);
             }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private static function youtubePlayers(string $html, string $pageUrl, string $pageHost): array
+    {
+        $out = [];
+
+        if (preg_match_all('#<div\b[^>]*\byoutube-player\b[^>]*>#i', $html, $matches) === false) {
+            return $out;
+        }
+
+        foreach ($matches[0] as $tag) {
+            $id = self::attr($tag, 'data-id');
+
+            if ($id === '') {
+                continue;
+            }
+
+            $target = preg_match('/^[A-Za-z0-9_-]{11}$/', $id) === 1
+                ? 'https://www.youtube.com/embed/' . $id
+                : $id;
+            $hit = ServiceCatalog::identify($target, '');
+
+            $out[] = self::finding('iframe', $hit['id'] ?? 'youtube', $target, $pageUrl, $hit, 'reference', [
+                'youtube_player' => true,
+            ]);
         }
 
         return $out;

@@ -17,12 +17,12 @@ final class HttpCrawler
      */
     public function run(string $startUrl, array $options, HttpTransport $transport, SsrfGuard $guard): array
     {
-        $maxPages     = max(1, min(50, (int) ($options['max_pages'] ?? 10)));
-        $maxDepth     = max(0, min(5, (int) ($options['max_depth'] ?? 2)));
-        $timeout      = max(1, min(15, (int) ($options['timeout'] ?? 8)));
-        $maxBytes     = max(10_000, min(1_000_000, (int) ($options['max_bytes'] ?? 400_000)));
-        $maxSeconds   = max(5, min(90, (int) ($options['max_seconds'] ?? 25)));
-        $delayMs      = max(0, min(2000, (int) ($options['delay_ms'] ?? 150)));
+        $maxPages     = ScanLimits::pageCap($options);
+        $maxDepth     = ScanLimits::depth($options);
+        $timeout      = ScanLimits::timeout($options);
+        $maxBytes     = ScanLimits::maxBytes($options);
+        $maxSeconds   = ScanLimits::maxSeconds($options);
+        $delayMs      = ScanLimits::delayMs($options);
         $started      = microtime(true);
         $queue        = [[UrlPolicy::normalize($guard->assertSafe($startUrl)), 0]];
         $seen         = [];
@@ -33,7 +33,7 @@ final class HttpCrawler
 
         $this->seedFromSitemap($startUrl, $transport, $guard, $timeout, $maxBytes, $queue, $seen, $errors);
 
-        while ($queue !== [] && \count($pages) < $maxPages) {
+        while ($queue !== [] && ($maxPages === 0 || \count($pages) < $maxPages)) {
             if ((microtime(true) - $started) > $maxSeconds) {
                 $errors[] = 'Stopped: time limit.';
                 break;
@@ -122,6 +122,62 @@ final class HttpCrawler
                 'max_depth'   => $maxDepth,
                 'max_seconds' => $maxSeconds,
             ],
+        ];
+    }
+
+    /**
+     * @return array{url: string, status: int, findings: list<array<string, mixed>>, links: list<string>}
+     */
+    public function fetchPage(
+        string $url,
+        int $depth,
+        int $maxDepth,
+        HttpTransport $transport,
+        SsrfGuard $guard,
+        int $timeout,
+        int $maxBytes
+    ): array {
+        $safe = $guard->assertSafe($url);
+        $response = $this->getFollowingRedirects($safe, $transport, $guard, $timeout, $maxBytes, 3);
+        $startHost = strtolower((string) parse_url($response->url, PHP_URL_HOST));
+        $findings = [];
+        $links = [];
+
+        foreach (CookieHeaderParser::parse($response->headers) as $cookie) {
+            $findings[] = HtmlAnalyzer::finding(
+                'cookie_header',
+                $cookie['name'],
+                $response->url,
+                $response->url,
+                null,
+                'observed',
+                [
+                    'domain'  => $cookie['domain'],
+                    'max_age' => $cookie['max_age'],
+                    'note'    => 'Observed in Set-Cookie of this site response.',
+                ]
+            );
+        }
+
+        $type = strtolower((string) ($response->headers['content-type'] ?? ''));
+
+        if (str_contains($type, 'xml') || str_ends_with($response->url, '.xml')) {
+            $links = array_merge($links, HtmlAnalyzer::sitemapUrls($response->body, $guard));
+        }
+
+        if ($response->status >= 200 && $response->status < 400) {
+            $findings = array_merge($findings, HtmlAnalyzer::analyze($response->body, $response->url, $startHost));
+
+            if ($depth < $maxDepth) {
+                $links = array_merge($links, HtmlAnalyzer::internalLinks($response->body, $response->url, $guard));
+            }
+        }
+
+        return [
+            'url'      => $response->url,
+            'status'   => $response->status,
+            'findings' => $findings,
+            'links'    => array_values(array_unique($links)),
         ];
     }
 

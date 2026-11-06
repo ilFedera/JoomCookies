@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.2.0 — 2026-11-06
+
+- Segnaposto YouTube 16:9 responsive per griglie e video singoli, con variante compatta e pulsanti JoomCookies.
+- Supporto ai contenitori esistenti `.youtube-player[data-id]`, anche se aggiunti dinamicamente.
+- YouTube non viene auto-iniettato all'accettazione generale: serve un clic esplicito su "Carica il video" dopo il consenso.
+- Scansione rapida (limite configurabile, default 50) e scansione completa senza tetto arbitrario di pagine.
+- Coda persistente a lotti con pausa, ripresa, annullamento e risultati raggruppati.
+- Scansione browser Playwright/Chromium ancora solo come architettura documentata, non operativa.
+
 ## 2.1.1 — 2026-11-06
 
 - Banner isolato, centrato e con z-index massimo; titolo e testi usano i colori configurati.

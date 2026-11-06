@@ -5,8 +5,10 @@ declare(strict_types=1);
 use JoomCookies\Component\Joomcookies\Administrator\Service\Access\AccessGate;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Migration\PluginMigration;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\CookieHeaderParser;
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\FindingAggregator;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HtmlAnalyzer;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HttpCrawler;
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanLimits;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HttpResponse;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HttpTransport;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanComparer;
@@ -18,6 +20,7 @@ use JoomCookies\Plugin\System\Joomcookies\Service\ServiceRegistry;
 
 $installSql = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/sql/install.mysql.utf8.sql') ?: '';
 assertTrue(!str_contains($installSql, "INSERT INTO `#__joomcookies_categories`"), 'Install SQL does not seed categories (avoids duplicate alias)');
+assertTrue(str_contains($installSql, 'joomcookies_scan_queue'), 'Install SQL creates the scan queue table');
 
 $pluginClassFile = dirname(__DIR__) . '/extensions/plg_system_joomcookies/src/Extension/Joomcookies.php';
 $bridgeFile      = dirname(__DIR__) . '/extensions/plg_system_joomcookies/src/Service/ComponentConfigBridge.php';
@@ -46,6 +49,7 @@ $defaults = \JoomCookies\Component\Joomcookies\Administrator\Service\DefaultCopy
 assertTrue($defaults['text_title'] === 'La tua privacy è importante', 'Default banner title is Italian');
 assertTrue(str_contains((string) $defaults['text_message'], 'solo con il tuo consenso'), 'Default banner message is Italian');
 assertTrue($defaults['text_youtube_prefs'] === 'Gestisci preferenze', 'Default YouTube preferences button is Italian');
+assertTrue($defaults['text_youtube_help'] === 'Attiva i contenuti esterni per visualizzarlo.', 'Default YouTube help is short');
 
 $css = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/css/joomcookies.css') ?: '';
 assertTrue(str_contains($css, '2147483647'), 'Banner uses a maximum stacking z-index');
@@ -119,6 +123,26 @@ $diff = ScanComparer::diff(
     [['type' => 'script', 'name' => 'gtm', 'domain' => 'googletagmanager.com', 'service_id' => 'gtm'], ['type' => 'iframe', 'name' => 'youtube', 'domain' => 'youtube.com', 'service_id' => 'youtube']]
 );
 assertTrue(\count($diff['added']) === 1 && $diff['unchanged'] === 1, 'Scan comparison detects additions');
+$incompleteDiff = ScanComparer::diff(
+    [['type' => 'script', 'name' => 'gtm', 'domain' => 'googletagmanager.com', 'service_id' => 'gtm']],
+    [],
+    false
+);
+assertTrue($incompleteDiff['removed'] === [] && $incompleteDiff['incomplete'] === true, 'Incomplete scans do not mark services as removed');
+$grouped = FindingAggregator::group([
+    ['type' => 'script', 'name' => 'gtm', 'domain' => 'googletagmanager.com', 'service_id' => 'gtm', 'page_url' => 'https://example.test/a'],
+    ['type' => 'script', 'name' => 'gtm', 'domain' => 'googletagmanager.com', 'service_id' => 'gtm', 'page_url' => 'https://example.test/b'],
+]);
+assertTrue(\count($grouped) === 1 && (int) $grouped[0]['occurrences'] === 2 && (int) $grouped[0]['page_count'] === 2, 'Findings are grouped by service');
+assertTrue(ScanLimits::pageCap(['scan_mode' => 'complete', 'max_pages' => 50]) === 0, 'Complete scan has no page cap');
+assertTrue(ScanLimits::pageCap(['scan_mode' => 'quick', 'max_pages' => 50]) === 50, 'Quick scan keeps the configured cap');
+$crawlerSrc = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/src/Service/Scan/HttpCrawler.php') ?: '';
+$scanCtrlSrc = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/src/Controller/ScanController.php') ?: '';
+assertTrue(!str_contains($crawlerSrc, 'min(50') && !str_contains($scanCtrlSrc, 'min(50'), 'Hard 50-page cap is removed');
+$js = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/js/joomcookies.js') ?: '';
+assertTrue(str_contains($js, 'enhanceYoutubePlayers'), 'Frontend enhances youtube-player containers');
+assertTrue(str_contains($js, 'observeDynamicContent'), 'MutationObserver watches dynamically added videos');
+assertTrue(str_contains($js, 'isYoutubeEmbed(node) && !onlyNode'), 'YouTube is not auto-injected on general accept');
 
 $driver = new UnavailableBrowserScanDriver();
 assertTrue($driver->isAvailable() === false, 'Browser driver is not available');
@@ -152,6 +176,48 @@ $result = (new HttpCrawler())->run('https://example.test/', [
     'max_bytes' => 20000,
     'delay_ms' => 0,
 ], $transport, new SsrfGuard(['example.test'], false));
+
+$sitemapTransport = new class () implements HttpTransport {
+    public function get(string $url, int $timeout, int $maxBytes): HttpResponse
+    {
+        if (str_contains($url, 'robots.txt')) {
+            return new HttpResponse(404, '', [], $url);
+        }
+
+        if (str_contains($url, 'sitemap.xml')) {
+            $locs = '';
+            for ($i = 1; $i <= 1000; $i++) {
+                $locs .= '<url><loc>https://example.test/p' . $i . '</loc></url>';
+            }
+
+            return new HttpResponse(200, '<?xml version="1.0"?><urlset>' . $locs . '</urlset>', ['content-type' => 'application/xml'], $url);
+        }
+
+        return new HttpResponse(200, '<html><body>ok</body></html>', [], $url);
+    }
+};
+
+$large = (new HttpCrawler())->run('https://example.test/', [
+    'max_pages' => 80,
+    'max_depth' => 0,
+    'max_seconds' => 20,
+    'timeout' => 2,
+    'max_bytes' => 20000,
+    'delay_ms' => 0,
+    'scan_mode' => 'quick',
+], $sitemapTransport, new SsrfGuard(['example.test'], false));
+assertTrue(\count($large['pages']) === 80, 'Quick scan can exceed the old 50-page cap');
+
+$complete = (new HttpCrawler())->run('https://example.test/', [
+    'max_pages' => 50,
+    'max_depth' => 0,
+    'max_seconds' => 20,
+    'timeout' => 2,
+    'max_bytes' => 20000,
+    'delay_ms' => 0,
+    'scan_mode' => 'complete',
+], $sitemapTransport, new SsrfGuard(['example.test'], false));
+assertTrue(\count($complete['pages']) > 1000, 'Complete scan is not limited to 50, 80 or 1,000 pages');
 
 $crawlerTypes = array_column($result['findings'], 'type');
 assertTrue(\in_array('script', $crawlerTypes, true), 'Crawler records third-party script');

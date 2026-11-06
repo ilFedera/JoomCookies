@@ -1,6 +1,6 @@
 # JoomCookies
 
-Versione **2.1.1**: package con componente amministrativo `com_joomcookies` e plugin di sistema `plg_system_joomcookies`.
+Versione **2.2.0**: package con componente amministrativo `com_joomcookies` e plugin di sistema `plg_system_joomcookies`.
 
 Estensione Joomla 5 e Joomla 6 per la gestione del consenso cookie e il **blocco preventivo** dei servizi non essenziali. Il pacchetto è autonomo: non usa CookieYes, CMP commerciali, CDN o servizi esterni.
 
@@ -10,7 +10,7 @@ JoomCookies facilita gli adempimenti GDPR/ePrivacy. **Non dichiara una conformit
 
 Il file installabile è:
 
-`dist/pkg_joomcookies-2.1.1.zip`
+`dist/pkg_joomcookies-2.2.0.zip`
 
 Installa il componente **JoomCookies** e il plugin di sistema `System - JoomCookies`. Non modifica core, template, articoli, moduli o altre estensioni. In aggiornamento da V1 i parametri del plugin sono conservati e importati nel componente in modo idempotente.
 
@@ -23,7 +23,7 @@ Installa il componente **JoomCookies** e il plugin di sistema `System - JoomCook
 ## Installazione
 
 1. In amministrazione Joomla aprire **Sistema → Installazione → Estensioni**.
-2. Caricare `dist/pkg_joomcookies-2.1.1.zip`.
+2. Caricare `dist/pkg_joomcookies-2.2.0.zip`.
 3. Verificare che il plugin **Sistema - JoomCookies** sia abilitato e che il componente compaia in **Componenti → JoomCookies**.
 4. In **Componenti → JoomCookies** usare Panoramica, Scansione, Servizi, Banner e Testi. I parametri del plugin restano un fallback (origine configurazione: Auto / Componente / Plugin).
 5. In alternativa, **Sistema → Plugin**, cercare `JoomCookies` e configurare:
@@ -43,7 +43,13 @@ Negli articoli, nei moduli HTML (con "Prepara contenuto" attivo) o nel markup:
 {joomcookies youtube="VIDEO_ID" title="Titolo" ratio="16:9"}
 ```
 
-Sono riconosciuti anche gli iframe YouTube già presenti nella pagina. Prima del consenso non viene creato un iframe e non parte una connessione a YouTube, salvo l'opzione esplicita "Miniatura YouTube".
+Sono riconosciuti anche gli iframe YouTube già presenti nella pagina e i contenitori esistenti:
+
+```html
+<div class="youtube-player" data-id="VIDEO_ID"></div>
+```
+
+Prima del consenso non viene creato un iframe e non parte una connessione a YouTube, salvo l'opzione esplicita "Miniatura YouTube". Nelle griglie il segnaposto resta 16:9, compatto, con icona, titolo breve e pulsante **Gestisci preferenze**. **Carica il video** compare solo dopo il consenso alla categoria Contenuti esterni.
 
 Per riaprire le preferenze:
 
