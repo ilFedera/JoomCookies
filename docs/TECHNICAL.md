@@ -1,4 +1,4 @@
-# Documentazione tecnica JoomCookies 2.2.1
+# Documentazione tecnica JoomCookies 2.2.2
 
 ## Architettura
 
@@ -80,7 +80,7 @@ document.addEventListener('joomcookies:change', handler);
 document.addEventListener('joomcookies:ready', handler);
 ```
 
-Se YOOtheme o LiteSpeed omettono lo script in `<head>`, il plugin lo inietta prima di `</body>` con attributi `data-no-optimize`. Dopo un aggiornamento svuotare la cache HTML/JS del sito.
+L'HTML pubblico è sempre in forma bloccata (adatto a LiteSpeed senza vary sul cookie). Il consenso si applica in JavaScript. Vedi `docs/LITESPEED.md`. Gli asset CSS/JS usano `?v=` con la versione del package e attributi `data-no-optimize` / `data-no-defer` / `data-no-delay`.
 
 Lightbox e griglie: se inizializzano gli iframe al `DOMContentLoaded`, dopo l'accettazione della categoria "contenuti esterni" può essere necessario un ricaricamento.
 

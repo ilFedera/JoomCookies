@@ -84,10 +84,8 @@ final class HtmlGuard
             return $full;
         }
 
-        if (!empty($this->consent[$hit['category']])) {
-            return $full;
-        }
-
+        // Always rewrite in HTML so LiteSpeed can cache one guest document.
+        // Consent is applied in the browser from cookie/localStorage.
         $this->blocked[] = [
             'type'     => 'script',
             'service'  => $hit['id'],
@@ -134,14 +132,6 @@ final class HtmlGuard
             return $full;
         }
 
-        if (!empty($this->consent[$hit['category']])) {
-            if ($hit['id'] === 'youtube' || $hit['id'] === 'youtube-nocookie' || $hit['id'] === 'youtu-be') {
-                return $this->rewriteAllowedYoutubeIframe($attributes, $src);
-            }
-
-            return $full;
-        }
-
         $this->blocked[] = [
             'type'     => 'iframe',
             'service'  => $hit['id'],
@@ -174,10 +164,6 @@ final class HtmlGuard
 
                 if ($parsed === null) {
                     return $match[0];
-                }
-
-                if (!empty($this->consent[ConsentState::CATEGORY_EMBEDS])) {
-                    return $this->youtubePlayer($parsed['id'], $parsed['title'], $parsed['ratio']);
                 }
 
                 $this->blocked[] = [

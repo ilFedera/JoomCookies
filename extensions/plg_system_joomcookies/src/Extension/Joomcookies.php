@@ -13,6 +13,7 @@ use JoomCookies\Plugin\System\Joomcookies\Service\BannerRenderer;
 use JoomCookies\Plugin\System\Joomcookies\Service\ComponentConfigBridge;
 use JoomCookies\Plugin\System\Joomcookies\Service\ConfigBuilder;
 use JoomCookies\Plugin\System\Joomcookies\Service\ConsentState;
+use JoomCookies\Plugin\System\Joomcookies\Service\FrontendAssets;
 use JoomCookies\Plugin\System\Joomcookies\Service\HtmlGuard;
 use JoomCookies\Plugin\System\Joomcookies\Service\ServiceRegistry;
 use Joomla\CMS\Document\HtmlDocument;
@@ -178,24 +179,7 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
             $this->extraServices()
         ));
 
-        return new HtmlGuard($registry, ConfigBuilder::guardOptions($config), $this->currentConsent());
-    }
-
-    /**
-     * @return array<string, bool>
-     */
-    private function currentConsent(): array
-    {
-        $config = $this->config();
-        $name   = (string) ($config['cookie']['name'] ?? 'joomcookies_consent');
-        $cookie = $this->getApplication()->getInput()->cookie->get($name, '', 'string');
-        $state  = ConsentState::decode((string) $cookie);
-
-        if ($state === null || !ConsentState::matchesVersion($state, (string) $config['version'])) {
-            return ConsentState::deniedOptional();
-        }
-
-        return $state['c'];
+        return new HtmlGuard($registry, ConfigBuilder::guardOptions($config), ConsentState::deniedOptional());
     }
 
     private function eventItem(EventInterface $event): mixed
@@ -239,13 +223,31 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
     private function ensureFrontendAssets(string $body, array $config): string
     {
         $base = rtrim(Uri::root(true), '/') . '/media/plg_system_joomcookies';
-        $css  = $base . '/css/joomcookies.css';
-        $js   = $base . '/js/joomcookies.js';
-        $ver  = '2.2.1';
+        $css  = FrontendAssets::withVersion($base . '/css/joomcookies.css');
+        $js   = FrontendAssets::withVersion($base . '/js/joomcookies.js');
+        $prot = FrontendAssets::protectionAttributes();
+
+        $body = preg_replace_callback(
+            '#<link\b[^>]*plg_system_joomcookies/css/joomcookies\.css[^>]*>#i',
+            static function (array $match) use ($css, $prot): string {
+                return '<link rel="stylesheet" href="' . htmlspecialchars($css, ENT_QUOTES, 'UTF-8')
+                    . '" id="joomcookies-css"' . $prot . '>';
+            },
+            $body
+        ) ?? $body;
+
+        $body = preg_replace_callback(
+            '#<script\b[^>]*plg_system_joomcookies/js/joomcookies\.js[^>]*>\s*</script>#i',
+            static function (array $match) use ($js, $prot): string {
+                return '<script src="' . htmlspecialchars($js, ENT_QUOTES, 'UTF-8')
+                    . '" id="joomcookies-runtime" data-jck-ignore="1"' . $prot . '></script>';
+            },
+            $body
+        ) ?? $body;
 
         if (!preg_match('#plg_system_joomcookies/css/joomcookies\.css#i', $body)) {
             $link = '<link rel="stylesheet" href="' . htmlspecialchars($css, ENT_QUOTES, 'UTF-8')
-                . '?v=' . $ver . '" id="joomcookies-css" data-no-optimize="1">';
+                . '" id="joomcookies-css"' . $prot . '>';
             $body = self::injectBeforeHeadClose($body, $link);
         }
 
@@ -257,8 +259,8 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
         }
 
         if (!preg_match('#plg_system_joomcookies/js/joomcookies\.js#i', $body)) {
-            $script = '<script src="' . htmlspecialchars($js, ENT_QUOTES, 'UTF-8') . '?v=' . $ver
-                . '" id="joomcookies-runtime" data-jck-ignore="1" data-no-optimize="1" data-no-defer="1" data-cfasync="false"></script>';
+            $script = '<script src="' . htmlspecialchars($js, ENT_QUOTES, 'UTF-8')
+                . '" id="joomcookies-runtime" data-jck-ignore="1"' . $prot . '></script>';
             $body = self::injectBeforeBody($body, $script);
         }
 

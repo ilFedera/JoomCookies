@@ -1,23 +1,32 @@
 {
   "$schema": "https://developer.joomla.org/schemas/json-schema/v1/web_assets.json",
   "name": "plg_system_joomcookies",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "JoomCookies frontend assets",
   "license": "GPL-2.0-or-later",
   "assets": [
     {
       "name": "plg_system_joomcookies.core",
       "type": "style",
-      "uri": "plg_system_joomcookies/css/joomcookies.css"
+      "uri": "plg_system_joomcookies/css/joomcookies.css",
+      "version": "2.2.2",
+      "attributes": {
+        "data-no-optimize": "1",
+        "data-no-minify": "1"
+      }
     },
     {
       "name": "plg_system_joomcookies.core",
       "type": "script",
       "uri": "plg_system_joomcookies/js/joomcookies.js",
+      "version": "2.2.2",
       "attributes": {
-        "defer": true,
+        "defer": false,
         "data-no-optimize": "1",
         "data-no-defer": "1",
+        "data-no-delay": "1",
+        "data-no-combine": "1",
+        "data-no-minify": "1",
         "data-cfasync": "false"
       }
     }

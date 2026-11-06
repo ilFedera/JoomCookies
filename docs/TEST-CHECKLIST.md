@@ -37,6 +37,15 @@ Ambiente richiesto: Joomla 5 e, se disponibile, Joomla 6. Finestra anonima, DevT
 - [ ] In amministrazione aumentare `consent_version`.
 - [ ] Al reload frontend il banner ricompare anche con cookie precedente.
 
+## LiteSpeed Cache (sito Joomla di test)
+
+- [ ] Cache fredda, nessun consenso: HTML con `type="text/plain"` e segnaposto YouTube, nessuna richiesta a YouTube/GTM.
+- [ ] Cache calda, nessun consenso: stesso HTML, stesso blocco.
+- [ ] Consenso salvato e reload da cache: JS attiva gli script; i placeholder YouTube mostrano "Carica il video" anche in griglia.
+- [ ] Revoca: i player si interrompono e non partono nuove richieste YouTube.
+- [ ] `joomcookies.js?v=` corrisponde alla versione installata; LiteSpeed non combina/ritarda quel file.
+- [ ] Nessuna vary cache sul cookie `joomcookies_consent`.
+
 ## Diagnostica
 
 - [ ] Abilitare la modalità diagnostica solo in test.

@@ -133,11 +133,17 @@ $allowed = (new HtmlGuard($registry, [
     'youtube_nocookie' => true,
     'youtube_thumbnails' => 'local',
     'open_prefs_label' => 'Prefs',
+    'embed_blocked_label' => 'Blocked',
+    'embed_load_label' => 'Load',
+    'youtube_blocked_label' => 'YouTube video',
     'youtube_load_label' => 'Load video',
+    'youtube_help' => 'Help',
 ], ['necessary' => true, 'statistics' => true, 'marketing' => true, 'embeds' => true]))->process($html);
 
-assertTrue(str_contains($allowed, 'src="https://www.googletagmanager.com/gtag/js?id=G-TEST"'), 'Accepted statistics scripts stay active');
-assertTrue(str_contains($allowed, 'youtube-nocookie.com/embed/dQw4w9WgXcQ'), 'Accepted YouTube uses nocookie host');
+assertTrue(str_contains($allowed, 'type="text/plain"') && str_contains($allowed, 'data-jck-src="https://www.googletagmanager.com/gtag/js?id=G-TEST"'), 'HTML stays blocked even if a consent cookie is present (LiteSpeed-safe)');
+assertTrue(!preg_match('#<iframe[^>]+src="https://www\.youtube#', $allowed), 'Live YouTube iframes are not written into cacheable HTML');
+assertTrue(str_contains($allowed, 'youtube-nocookie.com/embed/dQw4w9WgXcQ'), 'Placeholder payload still uses the nocookie host');
+assertTrue($allowed === $blocked, 'Consent cookie does not change public HTML, so one cache copy is safe');
 
 $xss = (new HtmlGuard($registry, [
     'youtube_nocookie' => true,

@@ -1,0 +1,1 @@
+-- 2.2.2: LiteSpeed-safe HTML and asset versioning; no schema change.

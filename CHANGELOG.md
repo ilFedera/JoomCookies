@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.2 — 2026-11-06
+
+- HTML pubblico sempre in forma bloccata: il consenso si applica nel browser, compatibile con LiteSpeed Cache senza vary sul cookie.
+- Asset CSS/JS versionati (`?v=2.2.2`) e marcati per escludere defer, delay, minify e combine.
+- Dopo consenso o revoca i placeholder YouTube si aggiornano in pagina, anche se l'HTML arriva dalla cache.
+
 ## 2.2.1 — 2026-11-06
 
 - Corretto il blocco del frontend: il MutationObserver YouTube non riscrive più tutto il DOM a ogni mutazione.

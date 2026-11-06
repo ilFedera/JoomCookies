@@ -589,7 +589,15 @@
       });
       node.removeAttribute('data-jck-loaded');
       node.classList.remove('jck-embed--active');
+      if (isYoutubeEmbed(node)) {
+        var payload = parseEmbedPayload(node);
+        var videoId = node.getAttribute('data-jck-youtube') || (payload && payload.videoId) || '';
+        if (videoId) {
+          renderYoutubePlaceholder(node, videoId);
+        }
+      }
     });
+    enhanceYoutubePlayers(document);
   }
 
   function applyConsent(categories, options) {

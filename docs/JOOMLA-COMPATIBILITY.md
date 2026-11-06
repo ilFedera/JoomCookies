@@ -37,5 +37,6 @@ Non risultano quindi provate, su CMS reale:
 - l'ordine rispetto ad altri plugin di sistema
 - lightbox/griglie di template specifici
 - ACL del plugin in amministrazione
+- LiteSpeed Cache (fredda/calda, defer/delay/minify/combine) su Joomla 5.3.2
 
 Queste prove vanno eseguite su un clone di test, mai in produzione, seguendo `docs/TEST-CHECKLIST.md`.
