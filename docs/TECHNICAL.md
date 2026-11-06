@@ -1,4 +1,4 @@
-# Documentazione tecnica JoomCookies 2.2.6
+# Documentazione tecnica JoomCookies 2.2.7
 
 ## Architettura
 
@@ -50,7 +50,7 @@ Google Analytics: vedi `docs/ANALYTICS.md` (blocco preventivo YOOtheme/gtag, Con
 
 ## Registro servizi
 
-Il catalogo incorporato copre, tra gli altri: Google Tag Manager, Google Analytics, gtag.js, loader YOOtheme `theme-analytics`, gtag inline, Hotjar, Meta Pixel, DoubleClick, Ads, AdSense, YouTube, Vimeo, Google Maps, Instagram, TikTok. Non include reCAPTCHA.
+Il catalogo incorporato copre, tra gli altri: Google Tag Manager, Google Analytics, gtag.js, loader YOOtheme `theme-analytics`, gtag inline, Hotjar, Meta Pixel, DoubleClick, Ads, AdSense, YouTube, youtube-nocookie, Vimeo, Google Maps, Instagram, TikTok, Google reCAPTCHA. Lo scanner classifica reCAPTCHA; il plugin **non** lo blocca (è necessario).
 
 L'amministratore può aggiungere regole:
 
@@ -106,3 +106,17 @@ Questi casi richiedono integrazione specifica, blocco lato server o rimozione de
 3. Per un update server proprio, copiare `docs/updates/joomcookies-updates.xml.example` su un URL HTTPS e aggiungere `<updateservers>` nei manifest.
 
 Non è incluso un URL di update pubblico in questa versione, per evitare dipendenze da host esterni.
+
+## Scanner (PHP)
+
+Lo scanner HTTP non esegue JavaScript e non avvia un browser. Vede l’HTML consegnato da PHP (incluso il markup già bloccato da JoomCookies) e gli header `Set-Cookie` della risposta del sito. Non osserva cookie impostati dopo il consenso, tag iniettati da GTM a runtime, né iframe YouTube che esistono solo come placeholder.
+
+Metodi di scoperta:
+
+- **html** (predefinito): URL di partenza, menu pubblici in forma SEF, collegamenti `<a>` interni
+- **sitemap**: `robots.txt` e `sitemap.xml`, inclusi sitemap index; non segue i link HTML
+- **combined**: sitemap più crawling HTML
+
+Ogni URL considerato è scritto in `#__joomcookies_scan_urls` e resta consultabile dopo il completamento. La scansione rapida può terminare per limite di pagine con coda ancora piena; quella completa termina quando la coda è vuota.
+
+Un worker Playwright non è incluso e non deve girare nella richiesta PHP dell’hosting condiviso.

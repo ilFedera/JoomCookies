@@ -49,7 +49,7 @@
     var data = new FormData(from);
     var out = new FormData();
     data.forEach(function (value, key) {
-      if (key === 'task' || key === 'scan_mode' || key === 'start_url' || key === 'scan_id' || value === '1') {
+      if (key === 'task' || key === 'scan_mode' || key === 'discovery' || key === 'start_url' || key === 'scan_id' || value === '1') {
         out.set(key, value);
       }
     });
@@ -88,6 +88,10 @@
       }
       if (mode) {
         data.set('scan_mode', mode.value);
+      }
+      var discovery = $('discovery');
+      if (discovery) {
+        data.set('discovery', discovery.value);
       }
     }
     return fetch(endpoint(), {
@@ -167,6 +171,13 @@
     setText('jck-scan-errors', progress.errors || 0);
     setText('jck-scan-elapsed', (progress.elapsed_active || progress.elapsed || 0) + 's');
     setText('jck-scan-percent', (progress.estimated ? '~' : '') + percent + '%');
+    var reasonEl = $('jck-scan-complete-reason');
+    if (reasonEl) {
+      var reason = progress.complete_reason || '';
+      reasonEl.textContent = reason === 'page_cap'
+        ? 'Completed because the page limit was reached.'
+        : (reason === 'queue_empty' ? 'Completed: the queue is empty.' : '');
+    }
     if ($('jck-scan-findings')) {
       setText('jck-scan-findings', progress.findings || 0);
     }

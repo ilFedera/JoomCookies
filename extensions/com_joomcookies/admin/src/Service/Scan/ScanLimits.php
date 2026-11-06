@@ -13,6 +13,9 @@ final class ScanLimits
 {
     public const MODE_QUICK = 'quick';
     public const MODE_COMPLETE = 'complete';
+    public const DISCOVERY_HTML = 'html';
+    public const DISCOVERY_SITEMAP = 'sitemap';
+    public const DISCOVERY_COMBINED = 'combined';
 
     /**
      * @param  array<string, mixed>  $options
@@ -111,5 +114,34 @@ final class ScanLimits
     public static function batchSize(array $options): int
     {
         return max(1, min(25, (int) ($options['batch_size'] ?? 8)));
+    }
+
+    /**
+     * @param  array<string, mixed>  $options
+     */
+    public static function discovery(array $options): string
+    {
+        $value = (string) ($options['discovery'] ?? self::DISCOVERY_HTML);
+
+        return match ($value) {
+            self::DISCOVERY_SITEMAP, self::DISCOVERY_COMBINED => $value,
+            default => self::DISCOVERY_HTML,
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $options
+     */
+    public static function usesSitemap(array $options): bool
+    {
+        return \in_array(self::discovery($options), [self::DISCOVERY_SITEMAP, self::DISCOVERY_COMBINED], true);
+    }
+
+    /**
+     * @param  array<string, mixed>  $options
+     */
+    public static function followsHtml(array $options): bool
+    {
+        return \in_array(self::discovery($options), [self::DISCOVERY_HTML, self::DISCOVERY_COMBINED], true);
     }
 }

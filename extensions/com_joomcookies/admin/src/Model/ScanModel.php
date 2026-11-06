@@ -11,6 +11,8 @@ namespace JoomCookies\Component\Joomcookies\Administrator\Model;
 
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\FindingAggregator;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanComparer;
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanLimits;
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanUrlStore;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\UnavailableBrowserScanDriver;
 use JoomCookies\Component\Joomcookies\Administrator\Service\SettingsStore;
 use Joomla\CMS\Factory;
@@ -73,6 +75,17 @@ class ScanModel extends BaseDatabaseModel
         }
 
         $grouped = FindingAggregator::group($findings);
+        $input = Factory::getApplication()->getInput();
+        $urlSearch = trim((string) $input->getString('url_q', ''));
+        $urlOutcome = (string) $input->getCmd('url_outcome', '');
+        $urlDiscovery = (string) $input->getCmd('url_discovery', '');
+        $urlLimit = max(10, min(100, (int) $input->getInt('url_limit', 25)));
+        $urlStart = max(0, (int) $input->getInt('url_start', 0));
+        $urls = ['rows' => [], 'total' => 0];
+
+        if ($current) {
+            $urls = (new ScanUrlStore($db))->list((int) $current['id'], $urlSearch, $urlOutcome, $urlDiscovery, $urlLimit, $urlStart);
+        }
 
         return [
             'start_url' => (string) SettingsStore::get('scan_start_url', Uri::root()),
@@ -82,12 +95,21 @@ class ScanModel extends BaseDatabaseModel
             'stats'     => self::stats($grouped, $summary),
             'progress'  => $summary,
             'diff'      => $diff,
+            'urls'      => $urls,
+            'url_filters' => [
+                'q'         => $urlSearch,
+                'outcome'   => $urlOutcome,
+                'discovery' => $urlDiscovery,
+                'limit'     => $urlLimit,
+                'start'     => $urlStart,
+            ],
             'browser'   => $driver->describe(),
             'browser_available' => $driver->isAvailable(),
             'limits'    => [
                 'max_pages'   => max(1, min(5000, (int) SettingsStore::get('scan_max_pages', 50))),
                 'max_depth'   => SettingsStore::get('scan_max_depth', 2),
                 'max_seconds' => SettingsStore::get('scan_max_seconds', 12),
+                'discovery'   => ScanLimits::discovery(['discovery' => SettingsStore::get('scan_discovery', ScanLimits::DISCOVERY_HTML)]),
             ],
         ];
     }

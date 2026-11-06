@@ -40,6 +40,25 @@ final class UrlPolicy
         'option=com_config',
         'option=com_joomlaupdate',
         'option=com_login',
+        'format=feed',
+        'format=raw',
+        'print=1',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    private const TRACKING_PARAMS = [
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
+        'fbclid', 'gclid', 'gbraid', 'wbraid', 'dclid', 'msclkid', 'twclid', 'li_fat_id',
+        'mc_cid', 'mc_eid', 'igshid', '_ga', '_gl', 'yclid', 'zanpid',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    private const SENSITIVE_PARAMS = [
+        'token', 'password', 'passwd', 'pass', 'secret', 'key', 'api_key', 'apikey',
     ];
 
     public static function isSafeToCrawl(string $url): bool
@@ -70,11 +89,35 @@ final class UrlPolicy
             }
         }
 
-        if (preg_match('/\.(jpg|jpeg|png|gif|webp|svg|css|js|zip|pdf|woff2?|ico|mp4|mp3)$/i', $path) === 1) {
+        if (preg_match('/\.(jpg|jpeg|png|gif|webp|svg|css|js|zip|pdf|woff2?|ico|mp4|mp3|map)$/i', $path) === 1) {
             return false;
         }
 
         return true;
+    }
+
+    public static function excludeReason(string $url): string
+    {
+        if (self::isSafeToCrawl($url)) {
+            return '';
+        }
+
+        $path = strtolower((string) (parse_url($url, PHP_URL_PATH) ?? ''));
+        $query = strtolower((string) (parse_url($url, PHP_URL_QUERY) ?? ''));
+
+        if (str_contains($path, '/administrator') || str_contains($path, '/api')) {
+            return 'admin_or_api';
+        }
+
+        if (preg_match('/\.(jpg|jpeg|png|gif|webp|svg|css|js|zip|pdf|woff2?|ico|mp4|mp3|map)$/i', $path) === 1) {
+            return 'static_asset';
+        }
+
+        if (str_contains($query, 'token=') || str_contains($query, 'password') || str_contains($query, 'passwd')) {
+            return 'sensitive_query';
+        }
+
+        return 'policy';
     }
 
     public static function normalize(string $url): string
@@ -88,22 +131,45 @@ final class UrlPolicy
         $scheme = strtolower((string) ($parts['scheme'] ?? 'https'));
         $host   = strtolower((string) $parts['host']);
         $path   = $parts['path'] ?? '/';
-        $query  = '';
+        $port   = (int) ($parts['port'] ?? 0);
 
         if ($path === '') {
             $path = '/';
         }
 
+        if ($path !== '/') {
+            $path = rtrim($path, '/');
+        }
+
+        $origin = $scheme . '://' . $host;
+
+        if ($port > 0 && !(($scheme === 'http' && $port === 80) || ($scheme === 'https' && $port === 443))) {
+            $origin .= ':' . $port;
+        }
+
+        $query = '';
+
         if (isset($parts['query']) && $parts['query'] !== '') {
             parse_str((string) $parts['query'], $params);
-            foreach (['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', 'mc_cid', 'mc_eid'] as $drop) {
+            foreach (self::TRACKING_PARAMS as $drop) {
+                unset($params[$drop]);
+            }
+            foreach (self::SENSITIVE_PARAMS as $drop) {
                 unset($params[$drop]);
             }
             if ($params !== []) {
+                ksort($params);
                 $query = '?' . http_build_query($params);
             }
         }
 
-        return $scheme . '://' . $host . $path . $query;
+        return $origin . $path . $query;
+    }
+
+    public static function redact(string $url): string
+    {
+        $redacted = preg_replace('/([?&](?:' . implode('|', self::SENSITIVE_PARAMS) . ')=)[^&]*/i', '$1***', $url);
+
+        return \is_string($redacted) ? $redacted : $url;
     }
 }

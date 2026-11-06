@@ -2,8 +2,14 @@
 
 declare(strict_types=1);
 
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HtmlAnalyzer;
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HttpCrawler;
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HttpResponse;
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HttpTransport;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanAjax;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanLimits;
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ServiceCatalog;
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\SsrfGuard;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\UrlPolicy;
 
 assertTrue(ScanAjax::wantsJson(['HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest']) === true, 'XHR header is treated as AJAX');
@@ -45,3 +51,82 @@ assertTrue(str_contains($tmpl, 'jck-scan-continue'), 'HTML fallback can POST sca
 assertTrue(str_contains($tmpl, 'jck-scan-resume-form'), 'Resume is a real POST form');
 assertTrue(str_contains($tmpl, 'media/com_joomcookies/js/scan.js'), 'Scan JS is loaded with an explicit media URL');
 assertTrue(str_contains($tmpl, 'form.submit()'), 'Watchdog continues a running scan if fetch is unavailable');
+assertTrue(str_contains($tmpl, 'COM_JOOMCOOKIES_SCAN_URLS'), 'Scan page lists discovered URLs');
+assertTrue(str_contains($tmpl, 'name="discovery"'), 'Scan form offers a discovery method');
+assertTrue(str_contains($tmpl, 'scan.urlsCsv'), 'Discovered URLs can be exported as CSV');
+assertTrue(!str_contains($runnerSrc, '$root . \'/index.php?Itemid='), 'Menu seeding does not enqueue raw Itemid URLs');
+assertTrue(str_contains($runnerSrc, 'complete_reason'), 'Completion reason distinguishes page cap from empty queue');
+assertTrue(ScanLimits::discovery([]) === 'html', 'HTML crawl is the default discovery method');
+assertTrue(ScanLimits::usesSitemap(['discovery' => 'sitemap']) && !ScanLimits::followsHtml(['discovery' => 'sitemap']), 'Sitemap mode does not follow HTML links');
+assertTrue(ScanLimits::usesSitemap(['discovery' => 'combined']) && ScanLimits::followsHtml(['discovery' => 'combined']), 'Combined mode uses sitemap and HTML links');
+
+assertTrue(UrlPolicy::normalize('https://Example.test/page/#section') === 'https://example.test/page', 'Fragments are stripped');
+assertTrue(UrlPolicy::normalize('https://example.test/page/') === UrlPolicy::normalize('https://example.test/page'), 'Trailing slashes collapse except the site root');
+assertTrue(UrlPolicy::normalize('https://example.test/a?utm_source=x&id=12') === 'https://example.test/a?id=12', 'Tracking parameters are dropped, content ids are kept');
+assertTrue(UrlPolicy::normalize('https://example.test/a?start=20') === 'https://example.test/a?start=20', 'Pagination parameters are kept');
+assertTrue(str_contains(UrlPolicy::redact('https://example.test/?token=secret'), '***'), 'Sensitive query values are redacted');
+assertTrue(UrlPolicy::isSafeToCrawl('https://example.test/image.png') === false, 'Static assets are excluded');
+assertTrue(UrlPolicy::isSafeToCrawl('https://example.test/index.php?print=1') === false, 'Print views are excluded');
+
+$index = '<?xml version="1.0"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    . '<sitemap><loc>https://example.test/sitemap-pages.xml</loc></sitemap>'
+    . '<sitemap><loc>https://evil.test/sitemap.xml</loc></sitemap>'
+    . '</sitemapindex>';
+$sitemapGuard = new SsrfGuard(['example.test'], false);
+$fromIndex = HtmlAnalyzer::sitemapUrls($index, $sitemapGuard);
+assertTrue($fromIndex === ['https://example.test/sitemap-pages.xml'], 'Sitemap index keeps same-host loc and drops off-site URLs');
+
+$blockedHtml = '<script type="text/plain" data-jck-managed="1" data-jck-src="https://www.googletagmanager.com/gtag/js?id=G-TEST"></script>'
+    . '<script type="text/plain" data-jck-src="/templates/yootheme/vendor/yootheme/theme-analytics/app/analytics.min.js"></script>'
+    . '<script src="https://www.google.com/recaptcha/api.js"></script>'
+    . '<div class="jck-youtube" data-jck-youtube="dQw4w9WgXcQ"></div>'
+    . '<iframe data-jck-src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"></iframe>'
+    . '<link rel="canonical" href="https://example.test/canonical">';
+$blockedFindings = HtmlAnalyzer::analyze($blockedHtml, 'https://example.test/page/', 'example.test');
+$blockedIds = array_column($blockedFindings, 'service_id');
+assertTrue(\in_array('gtm', $blockedIds, true), 'Blocked gtag.js is still identified');
+assertTrue(\in_array('yootheme-analytics', $blockedIds, true), 'Blocked YOOtheme analytics is identified');
+assertTrue(\in_array('recaptcha', $blockedIds, true), 'reCAPTCHA script is identified');
+assertTrue(\in_array('youtube', $blockedIds, true) || \in_array('youtube-nocookie', $blockedIds, true), 'YouTube placeholder/iframe is identified');
+$gtmFinding = array_values(array_filter($blockedFindings, static fn ($row) => ($row['service_id'] ?? '') === 'gtm'))[0];
+assertTrue($gtmFinding['evidence_kind'] === 'blocked' && (int) $gtmFinding['observed'] === 0, 'Prior-blocked script is not marked as an observed cookie');
+assertTrue(ServiceCatalog::identify('https://www.google.com/recaptcha/api.js')['id'] === 'recaptcha', 'Catalogue maps reCAPTCHA');
+
+$redirectTransport = new class () implements HttpTransport {
+    public function get(string $url, int $timeout, int $maxBytes): HttpResponse
+    {
+        if (str_contains($url, '/old')) {
+            return new HttpResponse(301, '', ['location' => '/new?utm_source=scan'], $url);
+        }
+
+        $html = '<html><head><link rel="canonical" href="https://example.test/new"></head>'
+            . '<body><a href="/dup?fbclid=1">x</a><a href="https://example.test/file.pdf">pdf</a></body></html>';
+
+        return new HttpResponse(200, $html, ['set-cookie' => ['session=1; Path=/']], 'https://example.test/new');
+    }
+};
+$page = (new HttpCrawler())->fetchPage(
+    'https://example.test/old',
+    0,
+    2,
+    $redirectTransport,
+    new SsrfGuard(['example.test'], false),
+    2,
+    20000
+);
+assertTrue($page['url'] === 'https://example.test/new', 'Redirects are followed to the final same-host URL');
+assertTrue($page['status'] === 200, 'Final HTTP status is recorded');
+assertTrue($page['canonical'] === 'https://example.test/new', 'Canonical URL is recorded');
+assertTrue(\in_array('https://example.test/dup', $page['html_links'], true), 'HTML links are normalised before enqueue');
+assertTrue(!\in_array('https://example.test/file.pdf', $page['html_links'], true), 'Static files are not queued from HTML links');
+assertTrue(array_column($page['findings'], 'type') !== [] && \in_array('cookie_header', array_column($page['findings'], 'type'), true), 'Set-Cookie on the final response is observed');
+
+assertTrue(str_contains($ctrlSrc, 'function urlsCsv'), 'CSV export is an authorised admin task');
+
+$policySrc = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/src/Service/Scan/UrlPolicy.php') ?: '';
+assertTrue(str_contains($policySrc, '169.254') === false, 'UrlPolicy defers loopback/metadata blocking to SsrfGuard');
+
+$sql = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/sql/install.mysql.utf8.sql') ?: '';
+$updateSql = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/sql/updates/mysql/2.2.7.sql') ?: '';
+assertTrue(str_contains($sql, 'joomcookies_scan_urls') && str_contains($updateSql, 'CREATE TABLE IF NOT EXISTS'), 'URL log table is added with IF NOT EXISTS for upgrades');
+assertTrue(str_contains($sql, 'joomcookies_scan_queue') && str_contains($sql, 'joomcookies_scans'), 'Existing scan tables remain in the install schema');

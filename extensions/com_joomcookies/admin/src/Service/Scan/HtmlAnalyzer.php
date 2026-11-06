@@ -131,17 +131,22 @@ final class HtmlAnalyzer
         }
 
         foreach ($matches as $match) {
-            $src = self::attr($match[1] ?? '', 'src');
-            $id  = self::attr($match[1] ?? '', 'id');
+            $attrs = $match[1] ?? '';
+            $src = self::attr($attrs, 'src') ?: self::attr($attrs, 'data-jck-src');
+            $id  = self::attr($attrs, 'id');
             $js  = $match[2] ?? '';
+            $blocked = self::attr($attrs, 'data-jck-managed') !== ''
+                || str_contains(strtolower($attrs), 'text/plain');
             $hit = ServiceCatalog::identify($src, $js);
             $host = strtolower((string) parse_url($src, PHP_URL_HOST));
+            $evidence = $blocked ? 'blocked' : 'reference';
 
             if ($src !== '' && $host !== '' && $host !== strtolower($pageHost) && $hit === null) {
-                $hit = null;
-                $out[] = self::finding('script', 'unknown', $src, $pageUrl, null, 'reference', [
+                $out[] = self::finding('script', 'unknown', $src, $pageUrl, null, $evidence, [
                     'script_id' => $id,
                     'unknown'   => true,
+                    'blocked'   => $blocked,
+                    'loaded'    => false,
                 ]);
                 continue;
             }
@@ -151,9 +156,11 @@ final class HtmlAnalyzer
             }
 
             if ($hit !== null) {
-                $out[] = self::finding('script', $hit['id'], $src !== '' ? $src : $pageUrl, $pageUrl, $hit, 'reference', [
+                $out[] = self::finding('script', $hit['id'], $src !== '' ? $src : $pageUrl, $pageUrl, $hit, $evidence, [
                     'script_id' => $id,
                     'inline'    => $src === '',
+                    'blocked'   => $blocked,
+                    'loaded'    => !$blocked,
                 ]);
             }
         }
@@ -173,7 +180,7 @@ final class HtmlAnalyzer
         }
 
         foreach ($matches[0] as $tag) {
-            $id = self::attr($tag, 'data-id');
+            $id = self::attr($tag, 'data-id') ?: self::attr($tag, 'data-jck-youtube');
 
             if ($id === '') {
                 continue;
@@ -184,9 +191,31 @@ final class HtmlAnalyzer
                 : $id;
             $hit = ServiceCatalog::identify($target, '');
 
-            $out[] = self::finding('iframe', $hit['id'] ?? 'youtube', $target, $pageUrl, $hit, 'reference', [
+            $out[] = self::finding('iframe', $hit['id'] ?? 'youtube', $target, $pageUrl, $hit, 'blocked', [
                 'youtube_player' => true,
+                'blocked'        => true,
+                'loaded'         => false,
             ]);
+        }
+
+        if (preg_match_all('#data-jck-youtube=["\']([^"\']+)["\']#i', $html, $ids) !== false) {
+            foreach (array_unique($ids[1]) as $id) {
+                $id = trim((string) $id);
+
+                if ($id === '') {
+                    continue;
+                }
+
+                $target = preg_match('/^[A-Za-z0-9_-]{11}$/', $id) === 1
+                    ? 'https://www.youtube.com/embed/' . $id
+                    : $id;
+                $hit = ServiceCatalog::identify($target, '');
+                $out[] = self::finding('iframe', $hit['id'] ?? 'youtube', $target, $pageUrl, $hit, 'blocked', [
+                    'youtube_placeholder' => true,
+                    'blocked'             => true,
+                    'loaded'              => false,
+                ]);
+            }
         }
 
         return $out;
@@ -204,16 +233,25 @@ final class HtmlAnalyzer
         }
 
         foreach ($matches as $match) {
-            $src = self::attr($match[1] ?? '', 'src');
+            $attrs = $match[1] ?? '';
+            $src = self::attr($attrs, 'src')
+                ?: self::attr($attrs, 'data-jck-src')
+                ?: self::attr($attrs, 'data-jck-embed');
 
             if ($src === '') {
                 continue;
             }
 
+            $blocked = self::attr($attrs, 'data-jck-managed') !== ''
+                || self::attr($attrs, 'data-jck-src') !== ''
+                || self::attr($attrs, 'data-jck-embed') !== '';
             $hit = ServiceCatalog::identify($src, '');
+            $evidence = $blocked ? 'blocked' : 'reference';
 
-            $out[] = self::finding('iframe', $hit['id'] ?? 'unknown', $src, $pageUrl, $hit, 'reference', [
+            $out[] = self::finding('iframe', $hit['id'] ?? 'unknown', $src, $pageUrl, $hit, $evidence, [
                 'unknown' => $hit === null,
+                'blocked' => $blocked,
+                'loaded'  => !$blocked,
             ]);
         }
 

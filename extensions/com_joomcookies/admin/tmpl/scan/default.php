@@ -29,6 +29,16 @@ include dirname(__DIR__) . '/_nav.php';
 		</select>
 		<div class="form-text"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_MODE_DESC'); ?></div>
 	</div>
+	<div class="mb-3">
+		<label class="form-label" for="discovery"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY'); ?></label>
+		<select class="form-select" name="discovery" id="discovery">
+			<?php $discovery = (string) ($page['limits']['discovery'] ?? 'html'); ?>
+			<option value="html"<?php echo $discovery === 'html' ? ' selected' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY_HTML'); ?></option>
+			<option value="sitemap"<?php echo $discovery === 'sitemap' ? ' selected' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY_SITEMAP'); ?></option>
+			<option value="combined"<?php echo $discovery === 'combined' ? ' selected' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY_COMBINED'); ?></option>
+		</select>
+		<div class="form-text"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY_DESC'); ?></div>
+	</div>
 	<p class="text-muted"><?php echo Text::sprintf('COM_JOOMCOOKIES_SCAN_LIMITS', (int) $page['limits']['max_pages'], (int) $page['limits']['max_depth'], (int) $page['limits']['max_seconds']); ?></p>
 	<input type="hidden" name="task" value="scan.start">
 	<input type="hidden" name="scan_id" value="<?php echo $scanId; ?>">
@@ -64,6 +74,16 @@ include dirname(__DIR__) . '/_nav.php';
 </form>
 <div class="mb-4">
 	<div class="d-flex justify-content-between"><span><?php echo Text::_('COM_JOOMCOOKIES_SCAN_STATUS'); ?>: <strong id="jck-scan-status"><?php echo $this->escape((string) ($progress['status'] ?? ($page['current']['status'] ?? '-'))); ?></strong></span><span id="jck-scan-percent"><?php echo (int) ($progress['percent_final'] ?? $progress['percent'] ?? 0); ?>%</span></div>
+	<div class="small text-muted mt-1" id="jck-scan-complete-reason">
+		<?php
+		$reason = (string) ($progress['complete_reason'] ?? '');
+		if ($reason === 'page_cap') {
+			echo Text::_('COM_JOOMCOOKIES_SCAN_COMPLETE_CAP');
+		} elseif ($reason === 'queue_empty') {
+			echo Text::_('COM_JOOMCOOKIES_SCAN_COMPLETE_QUEUE');
+		}
+		?>
+	</div>
 	<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?php echo (int) ($progress['percent'] ?? 0); ?>">
 		<div class="progress-bar" id="jck-scan-progress" style="width: <?php echo (int) ($progress['percent'] ?? 0); ?>%"></div>
 	</div>
@@ -89,10 +109,18 @@ include dirname(__DIR__) . '/_nav.php';
 			<label class="form-label" for="scan_max_depth"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_MAX_DEPTH'); ?></label>
 			<input class="form-control" id="scan_max_depth" type="number" name="jform[scan_max_depth]" value="<?php echo (int) $page['limits']['max_depth']; ?>" min="0" max="8">
 		</div>
-		<div class="col-md-4">
+		<div class="col-md-3">
 			<label class="form-label" for="scan_max_seconds"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_MAX_SECONDS'); ?></label>
 			<input class="form-control" id="scan_max_seconds" type="number" name="jform[scan_max_seconds]" value="<?php echo (int) $page['limits']['max_seconds']; ?>" min="3" max="25">
 			<div class="form-text"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_MAX_SECONDS_DESC'); ?></div>
+		</div>
+		<div class="col-md-3">
+			<label class="form-label" for="scan_discovery"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY'); ?></label>
+			<select class="form-select" id="scan_discovery" name="jform[scan_discovery]">
+				<option value="html"<?php echo ($page['limits']['discovery'] ?? '') === 'html' ? ' selected' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY_HTML'); ?></option>
+				<option value="sitemap"<?php echo ($page['limits']['discovery'] ?? '') === 'sitemap' ? ' selected' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY_SITEMAP'); ?></option>
+				<option value="combined"<?php echo ($page['limits']['discovery'] ?? '') === 'combined' ? ' selected' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY_COMBINED'); ?></option>
+			</select>
 		</div>
 	</div>
 	<button class="btn btn-secondary mt-2" type="submit"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_SAVE_LIMITS'); ?></button>
@@ -155,7 +183,16 @@ include dirname(__DIR__) . '/_nav.php';
 				<td><?php echo $this->escape((string) $row['type']); ?></td>
 				<td><?php echo $this->escape((string) $row['name']); ?></td>
 				<td><?php echo $this->escape((string) $row['domain']); ?></td>
-				<td><?php echo ((int) $row['observed'] === 1) ? Text::_('COM_JOOMCOOKIES_OBSERVED') : Text::_('COM_JOOMCOOKIES_REFERENCE'); ?></td>
+				<td><?php
+				$kind = (string) ($row['evidence_kind'] ?? '');
+				if ((int) $row['observed'] === 1) {
+					echo Text::_('COM_JOOMCOOKIES_OBSERVED');
+				} elseif ($kind === 'blocked') {
+					echo Text::_('COM_JOOMCOOKIES_SCAN_EVIDENCE_BLOCKED');
+				} else {
+					echo Text::_('COM_JOOMCOOKIES_REFERENCE');
+				}
+				?></td>
 				<td><?php echo $this->escape((string) $row['category_suggested']); ?></td>
 				<td><?php echo $this->escape((string) ($row['page_url'] ?? '')); ?><?php echo !empty($row['page_count']) && (int) $row['page_count'] > 1 ? ' (+' . ((int) $row['page_count'] - 1) . ')' : ''; ?></td>
 				<td><?php echo (int) ($row['occurrences'] ?? 1); ?></td>
@@ -164,7 +201,104 @@ include dirname(__DIR__) . '/_nav.php';
 	</tbody>
 </table>
 <?php
-$scanJs = rtrim(Uri::root(true), '/') . '/media/com_joomcookies/js/scan.js?v=2.2.6';
+<?php
+$urls = $page['urls'] ?? ['rows' => [], 'total' => 0];
+$filters = $page['url_filters'] ?? ['q' => '', 'outcome' => '', 'discovery' => '', 'limit' => 25, 'start' => 0];
+$totalUrls = (int) ($urls['total'] ?? 0);
+$limit = (int) ($filters['limit'] ?? 25);
+$start = (int) ($filters['start'] ?? 0);
+?>
+<h2 class="h5 mt-4"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URLS'); ?></h2>
+<p class="text-muted"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URLS_DESC'); ?></p>
+<form action="<?php echo Route::_('index.php?option=com_joomcookies&view=scan&id=' . $scanId); ?>" method="get" class="row g-2 mb-3">
+	<input type="hidden" name="option" value="com_joomcookies">
+	<input type="hidden" name="view" value="scan">
+	<input type="hidden" name="id" value="<?php echo $scanId; ?>">
+	<div class="col-md-4">
+		<input class="form-control" type="search" name="url_q" value="<?php echo $this->escape((string) $filters['q']); ?>" placeholder="<?php echo $this->escape(Text::_('COM_JOOMCOOKIES_SCAN_URLS_SEARCH')); ?>">
+	</div>
+	<div class="col-md-2">
+		<select class="form-select" name="url_outcome">
+			<option value=""><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URLS_ALL_OUTCOMES'); ?></option>
+			<?php
+			$outcomes = [
+				'analyzed'  => 'COM_JOOMCOOKIES_SCAN_OUTCOME_ANALYZED',
+				'queued'    => 'COM_JOOMCOOKIES_SCAN_OUTCOME_QUEUED',
+				'duplicate' => 'COM_JOOMCOOKIES_SCAN_OUTCOME_DUPLICATE',
+				'excluded'  => 'COM_JOOMCOOKIES_SCAN_OUTCOME_EXCLUDED',
+				'error'     => 'COM_JOOMCOOKIES_SCAN_OUTCOME_ERROR',
+			];
+			?>
+			<?php foreach ($outcomes as $outcome => $outcomeLabel) : ?>
+				<option value="<?php echo $outcome; ?>"<?php echo ($filters['outcome'] ?? '') === $outcome ? ' selected' : ''; ?>><?php echo Text::_($outcomeLabel); ?></option>
+			<?php endforeach; ?>
+		</select>
+	</div>
+	<div class="col-md-2">
+		<select class="form-select" name="url_discovery">
+			<option value=""><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URLS_ALL_DISCOVERY'); ?></option>
+			<?php foreach (['seed', 'html_link', 'sitemap', 'menu', 'canonical'] as $method) : ?>
+				<option value="<?php echo $method; ?>"<?php echo ($filters['discovery'] ?? '') === $method ? ' selected' : ''; ?>><?php echo $this->escape($method); ?></option>
+			<?php endforeach; ?>
+		</select>
+	</div>
+	<div class="col-md-2">
+		<button class="btn btn-secondary" type="submit"><?php echo Text::_('JSEARCH_FILTER'); ?></button>
+	</div>
+</form>
+<?php if ($scanId > 0) : ?>
+<form action="<?php echo $action; ?>" method="post" class="mb-3">
+	<input type="hidden" name="task" value="scan.urlsCsv">
+	<input type="hidden" name="scan_id" value="<?php echo $scanId; ?>">
+	<button class="btn btn-outline-secondary btn-sm" type="submit"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URLS_CSV'); ?></button>
+	<?php echo $this->token; ?>
+</form>
+<?php endif; ?>
+<div class="table-responsive">
+	<table class="table table-sm">
+		<thead>
+			<tr>
+				<th><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URL_ORIGINAL'); ?></th>
+				<th><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URL_NORMALIZED'); ?></th>
+				<th><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URL_REFERRER'); ?></th>
+				<th><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URL_DISCOVERY'); ?></th>
+				<th><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URL_STATUS'); ?></th>
+				<th><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URL_FINAL'); ?></th>
+				<th><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URL_OUTCOME'); ?></th>
+				<th><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URL_REASON'); ?></th>
+				<th><?php echo Text::_('COM_JOOMCOOKIES_SCAN_URL_CANONICAL'); ?></th>
+			</tr>
+		</thead>
+		<tbody>
+			<?php foreach (($urls['rows'] ?? []) as $urlRow) : ?>
+				<tr>
+					<td><?php echo $this->escape((string) ($urlRow['original_url'] ?? '')); ?></td>
+					<td><?php echo $this->escape((string) ($urlRow['normalized'] ?? '')); ?></td>
+					<td><?php echo $this->escape((string) ($urlRow['referrer_url'] ?? '')); ?></td>
+					<td><?php echo $this->escape((string) ($urlRow['discovery'] ?? '')); ?></td>
+					<td><?php echo (int) ($urlRow['http_status'] ?? 0); ?></td>
+					<td><?php echo $this->escape((string) ($urlRow['final_url'] ?? '')); ?></td>
+					<td><?php echo $this->escape((string) ($urlRow['outcome'] ?? '')); ?></td>
+					<td><?php echo $this->escape((string) ($urlRow['reason'] ?? '')); ?></td>
+					<td><?php echo $this->escape((string) ($urlRow['canonical_url'] ?? '')); ?></td>
+				</tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
+</div>
+<?php if ($totalUrls > $limit) : ?>
+	<nav class="mb-4">
+		<?php if ($start > 0) : ?>
+			<a class="btn btn-sm btn-secondary" href="<?php echo Route::_('index.php?option=com_joomcookies&view=scan&id=' . $scanId . '&url_q=' . rawurlencode((string) $filters['q']) . '&url_outcome=' . rawurlencode((string) $filters['outcome']) . '&url_discovery=' . rawurlencode((string) $filters['discovery']) . '&url_limit=' . $limit . '&url_start=' . max(0, $start - $limit)); ?>"><?php echo Text::_('JPREV'); ?></a>
+		<?php endif; ?>
+		<?php if (($start + $limit) < $totalUrls) : ?>
+			<a class="btn btn-sm btn-secondary" href="<?php echo Route::_('index.php?option=com_joomcookies&view=scan&id=' . $scanId . '&url_q=' . rawurlencode((string) $filters['q']) . '&url_outcome=' . rawurlencode((string) $filters['outcome']) . '&url_discovery=' . rawurlencode((string) $filters['discovery']) . '&url_limit=' . $limit . '&url_start=' . ($start + $limit)); ?>"><?php echo Text::_('JNEXT'); ?></a>
+		<?php endif; ?>
+		<span class="ms-2 small text-muted"><?php echo ($start + 1); ?>–<?php echo min($totalUrls, $start + $limit); ?> / <?php echo $totalUrls; ?></span>
+	</nav>
+<?php endif; ?>
+<?php
+$scanJs = rtrim(Uri::root(true), '/') . '/media/com_joomcookies/js/scan.js?v=2.2.7';
 $wa = $this->getDocument()->getWebAssetManager();
 try {
 	$wa->getRegistry()->addExtensionRegistryFile('com_joomcookies');

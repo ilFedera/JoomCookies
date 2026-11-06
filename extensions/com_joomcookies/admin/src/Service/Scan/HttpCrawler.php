@@ -161,23 +161,34 @@ final class HttpCrawler
 
         $type = strtolower((string) ($response->headers['content-type'] ?? ''));
 
+        $sitemapLinks = [];
+        $htmlLinks = [];
+        $canonical = '';
+
         if (str_contains($type, 'xml') || str_ends_with($response->url, '.xml')) {
-            $links = array_merge($links, HtmlAnalyzer::sitemapUrls($response->body, $guard));
+            $sitemapLinks = HtmlAnalyzer::sitemapUrls($response->body, $guard);
+            $links = array_merge($links, $sitemapLinks);
         }
 
         if ($response->status >= 200 && $response->status < 400) {
             $findings = array_merge($findings, HtmlAnalyzer::analyze($response->body, $response->url, $startHost));
+            $canonicals = HtmlAnalyzer::canonicalUrls($response->body, $response->url, $guard);
+            $canonical = $canonicals[0] ?? '';
 
             if ($depth < $maxDepth) {
-                $links = array_merge($links, HtmlAnalyzer::internalLinks($response->body, $response->url, $guard));
+                $htmlLinks = HtmlAnalyzer::internalLinks($response->body, $response->url, $guard);
+                $links = array_merge($links, $htmlLinks);
             }
         }
 
         return [
-            'url'      => $response->url,
-            'status'   => $response->status,
-            'findings' => $findings,
-            'links'    => array_values(array_unique($links)),
+            'url'           => $response->url,
+            'status'        => $response->status,
+            'findings'      => $findings,
+            'links'         => array_values(array_unique($links)),
+            'sitemap_links' => array_values(array_unique($sitemapLinks)),
+            'html_links'    => array_values(array_unique($htmlLinks)),
+            'canonical'     => $canonical,
         ];
     }
 

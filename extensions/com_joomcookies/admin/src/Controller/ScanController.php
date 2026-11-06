@@ -13,6 +13,7 @@ use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HttpCrawler;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanAjax;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanLimits;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanRunner;
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanUrlStore;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\SsrfGuard;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\StreamHttpTransport;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\UnavailableBrowserScanDriver;
@@ -49,8 +50,10 @@ class ScanController extends BaseController
             return;
         }
 
+        $discovery = (string) $this->input->post->getCmd('discovery', (string) SettingsStore::get('scan_discovery', ScanLimits::DISCOVERY_HTML));
         $options = [
             'scan_mode'   => $mode === ScanLimits::MODE_COMPLETE ? ScanLimits::MODE_COMPLETE : ScanLimits::MODE_QUICK,
+            'discovery'   => ScanLimits::discovery(['discovery' => $discovery]),
             'max_pages'   => (int) SettingsStore::get('scan_max_pages', 50),
             'max_depth'   => (int) SettingsStore::get('scan_max_depth', 2),
             'max_seconds' => (int) SettingsStore::get('scan_max_seconds', 12),
@@ -118,6 +121,50 @@ class ScanController extends BaseController
         $this->authorize();
         $scanId = $this->scanId();
         $this->respond($this->runner()->statusPayload($scanId), $scanId);
+    }
+
+    public function urlsCsv(): void
+    {
+        $this->authorize();
+        $scanId = $this->scanId();
+
+        if ($scanId < 1) {
+            $this->fail(Text::_('COM_JOOMCOOKIES_SCAN_FAILED'));
+
+            return;
+        }
+
+        $store = new ScanUrlStore(Factory::getContainer()->get(DatabaseInterface::class));
+        $rows = $store->export($scanId);
+        $this->noCache();
+        $this->app->setHeader('Content-Type', 'text/csv; charset=utf-8');
+        $this->app->setHeader('Content-Disposition', 'attachment; filename="joomcookies-scan-' . $scanId . '-urls.csv"');
+        $this->app->setHeader('X-LiteSpeed-Cache-Control', 'no-cache');
+        $this->app->sendHeaders();
+        $out = fopen('php://output', 'w');
+
+        if ($out === false) {
+            $this->app->close();
+        }
+
+        fputcsv($out, ['original_url', 'normalized', 'referrer_url', 'discovery', 'http_status', 'final_url', 'canonical_url', 'outcome', 'reason']);
+
+        foreach ($rows as $row) {
+            fputcsv($out, [
+                (string) ($row['original_url'] ?? ''),
+                (string) ($row['normalized'] ?? ''),
+                (string) ($row['referrer_url'] ?? ''),
+                (string) ($row['discovery'] ?? ''),
+                (string) ($row['http_status'] ?? ''),
+                (string) ($row['final_url'] ?? ''),
+                (string) ($row['canonical_url'] ?? ''),
+                (string) ($row['outcome'] ?? ''),
+                (string) ($row['reason'] ?? ''),
+            ]);
+        }
+
+        fclose($out);
+        $this->app->close();
     }
 
     public function browserUnavailable(): void

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.7 — 2026-11-06
+
+- Registro persistente **URL individuati** (originale, normalizzato, provenienza, metodo, HTTP, redirect, esito, motivo, canonical) con ricerca, filtri, paginazione ed export CSV.
+- Deduplica: frammenti, slash finale, parametri di tracciamento, redirect e canonical; niente seed `index.php?Itemid=`.
+- Metodi di scoperta: crawling HTML (predefinito), sitemap XML (anche index) e combinato. Nessun tetto sulle 75 URL della sitemap.
+- Riconoscimento GA4/GTM/YOOtheme, reCAPTCHA e YouTube anche da `data-jck-src` / placeholder; distingue codice, blocco preventivo, Set-Cookie e cookie browser (questi ultimi non simulati).
+- Completamento per limite di pagine distinto da coda vuota; pause/resume/cancel invariati.
+
 ## 2.2.6 — 2026-11-06
 
 - Motore di scansione: i lotti successivi partono da soli (`scan.batch` in loop, watchdog HTML se il fetch non è disponibile). Non serve più premere Avvia.

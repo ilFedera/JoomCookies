@@ -10,6 +10,7 @@ namespace JoomCookies\Component\Joomcookies\Administrator\Service\Scan;
 \defined('_JEXEC') or die;
 
 use Joomla\CMS\Factory;
+use Joomla\CMS\Router\Route;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Database\DatabaseInterface;
 
@@ -51,9 +52,15 @@ final class ScanRunner
         $this->db->setQuery($query)->execute();
         $scanId = (int) $this->db->insertid();
 
-        $this->enqueue($scanId, $safeStart, 0);
-        $this->seedSitemaps($scanId, $safeStart, $options);
-        $this->seedMenus($scanId);
+        $this->enqueue($scanId, $safeStart, 0, 'seed');
+
+        if (ScanLimits::usesSitemap($options)) {
+            $this->seedSitemaps($scanId, $safeStart, $options);
+        }
+
+        if (ScanLimits::followsHtml($options)) {
+            $this->seedMenus($scanId);
+        }
 
         $this->writeSummary($scanId, $this->progress($scanId, $options, 'running'));
 
@@ -98,16 +105,16 @@ final class ScanRunner
         $batchSize = ScanLimits::batchSize($options);
         $maxSeconds = ScanLimits::maxSeconds($options);
         $started = microtime(true);
-        $processed = $this->queueCount($scanId, 'done');
+        $processed = $this->analyzedCount($scanId);
         $handled = 0;
         $active = (int) ($summary['elapsed_active'] ?? 0);
 
         try {
             while ($handled < $batchSize && (microtime(true) - $started) < $maxSeconds) {
-                $processed = $this->queueCount($scanId, 'done');
+                $processed = $this->analyzedCount($scanId);
 
                 if (!ScanLimits::allowsMorePages($options, $processed)) {
-                    $this->finish($scanId, 'complete', $options, $active + (int) round(microtime(true) - $started));
+                    $this->finish($scanId, 'complete', $options, $active + (int) round(microtime(true) - $started), 'page_cap');
 
                     return $this->statusPayload($scanId);
                 }
@@ -115,7 +122,7 @@ final class ScanRunner
                 $item = $this->nextPending($scanId);
 
                 if ($item === null) {
-                    $this->finish($scanId, 'complete', $options, $active + (int) round(microtime(true) - $started));
+                    $this->finish($scanId, 'complete', $options, $active + (int) round(microtime(true) - $started), 'queue_empty');
 
                     return $this->statusPayload($scanId);
                 }
@@ -134,20 +141,36 @@ final class ScanRunner
                     );
                 } catch (\Throwable) {
                     $this->markQueue($item['id'], 'error', 'Skip URL.');
+                    $this->urls()->record($scanId, [
+                        'original_url' => (string) $item['url'],
+                        'normalized'   => (string) $item['normalized'],
+                        'outcome'      => 'error',
+                        'reason'       => 'fetch_failed',
+                    ]);
                     $handled++;
                     continue;
                 }
 
-                foreach ($result['findings'] as $finding) {
-                    $this->storeFinding($scanId, $finding);
+                $decision = $this->recordFetch($scanId, $item, $result, $options);
+
+                if ($decision['store_findings']) {
+                    foreach ($result['findings'] as $finding) {
+                        $this->storeFinding($scanId, $finding);
+                    }
                 }
 
-                foreach ($result['links'] as $link) {
-                    $this->enqueue($scanId, $link, (int) $item['depth'] + 1);
+                foreach ($result['sitemap_links'] ?? [] as $link) {
+                    $this->enqueue($scanId, $link, 0, 'sitemap', (string) $item['url']);
+                }
+
+                if (ScanLimits::followsHtml($options)) {
+                    foreach ($result['html_links'] ?? [] as $link) {
+                        $this->enqueue($scanId, $link, (int) $item['depth'] + 1, 'html_link', (string) $item['url']);
+                    }
                 }
 
                 $this->markQueue($item['id'], 'done');
-                $processed++;
+                $processed = $this->analyzedCount($scanId);
                 $handled++;
 
                 if ($delayMs > 0) {
@@ -158,13 +181,14 @@ final class ScanRunner
             $active += (int) max(0, round(microtime(true) - $started));
         }
 
-        $processed = $this->queueCount($scanId, 'done');
+        $processed = $this->analyzedCount($scanId);
         $status = ScanLimits::allowsMorePages($options, $processed) && $this->pendingCount($scanId) > 0
             ? 'running'
             : 'complete';
 
         if ($status === 'complete') {
-            $this->finish($scanId, 'complete', $options, $active);
+            $reason = ScanLimits::allowsMorePages($options, $processed) ? 'queue_empty' : 'page_cap';
+            $this->finish($scanId, 'complete', $options, $active, $reason);
         } else {
             $progress = $this->progress($scanId, $options, 'running');
             $progress['elapsed_active'] = $active;
@@ -270,25 +294,35 @@ final class ScanRunner
         $startedAt = \is_array($scan) ? (string) ($scan['started_at'] ?? '') : '';
         $started = strtotime($startedAt) ?: time();
         $elapsed = max(0, time() - $started);
-        $discovered = max($queued, $done + $pending + $errors);
+        $analyzed = $this->analyzedCount($scanId);
+        $discovered = max($this->urlLogCount($scanId), $queued, $analyzed + $pending + $errors);
         $cap = ScanLimits::pageCap($options);
-        $percent = ScanLimits::percent($done, $discovered, $cap, $status);
+        $percent = ScanLimits::percent($analyzed, $discovered, $cap, $status);
         $estimated = $pending > 0 && $cap === 0 && $status === 'running';
+        $completeReason = (string) ($existing['complete_reason'] ?? '');
+
+        if ($status === 'complete' && $completeReason === '') {
+            $completeReason = ScanLimits::allowsMorePages($options, $analyzed) ? 'queue_empty' : 'page_cap';
+        }
 
         return [
             'status'          => $status,
             'scan_mode'       => ScanLimits::mode($options),
+            'discovery'       => ScanLimits::discovery($options),
             'page_cap'        => $cap,
-            'pages'           => $done,
+            'pages'           => $analyzed,
             'pending'         => $pending,
             'errors'          => $errors,
             'discovered'      => $discovered,
+            'duplicates'      => $this->urls()->countOutcome($scanId, 'duplicate'),
+            'excluded'        => $this->urls()->countOutcome($scanId, 'excluded'),
             'elapsed'         => $elapsed,
             'elapsed_active'  => (int) ($existing['elapsed_active'] ?? 0),
             'percent'         => $percent,
             'percent_final'   => $status === 'complete' ? 100 : $percent,
             'estimated'       => $estimated,
             'incomplete'      => \in_array($status, ['cancelled', 'paused', 'running'], true),
+            'complete_reason' => $completeReason,
             'findings'        => $this->findingCount($scanId),
         ];
     }
@@ -306,37 +340,33 @@ final class ScanRunner
         }
 
         $origin = $scheme . '://' . $host;
-        $candidates = [$origin . '/sitemap.xml', $origin . '/robots.txt'];
+        $this->enqueue($scanId, $origin . '/sitemap.xml', 0, 'sitemap');
         $timeout = ScanLimits::timeout($options);
         $maxBytes = ScanLimits::maxBytes($options);
 
-        foreach ($candidates as $url) {
-            try {
-                $safe = $this->guard->assertSafe($url);
-                $response = $this->transport->get($safe, $timeout, $maxBytes);
-            } catch (\Throwable) {
-                continue;
-            }
+        try {
+            $safe = $this->guard->assertSafe($origin . '/robots.txt');
+            $response = $this->transport->get($safe, $timeout, $maxBytes);
+        } catch (\Throwable) {
+            return;
+        }
 
-            if ($response->status >= 400) {
-                continue;
-            }
+        if ($response->status >= 400) {
+            return;
+        }
 
-            if (str_ends_with($url, 'robots.txt')) {
-                if (preg_match_all('/^sitemap:\s*(\S+)/im', $response->body, $matches)) {
-                    foreach ($matches[1] as $sitemap) {
-                        try {
-                            $this->enqueue($scanId, $this->guard->assertSafe(trim((string) $sitemap)), 0);
-                        } catch (\InvalidArgumentException) {
-                            // Off-site sitemap ignored.
-                        }
-                    }
+        if (preg_match_all('/^sitemap:\s*(\S+)/im', $response->body, $matches)) {
+            foreach ($matches[1] as $sitemap) {
+                try {
+                    $this->enqueue($scanId, $this->guard->assertSafe(trim((string) $sitemap)), 0, 'sitemap');
+                } catch (\InvalidArgumentException) {
+                    $this->urls()->record($scanId, [
+                        'original_url' => trim((string) $sitemap),
+                        'outcome'      => 'excluded',
+                        'reason'       => 'offsite_sitemap',
+                        'discovery'    => 'sitemap',
+                    ]);
                 }
-                continue;
-            }
-
-            foreach (HtmlAnalyzer::sitemapUrls($response->body, $this->guard) as $loc) {
-                $this->enqueue($scanId, $loc, 0);
             }
         }
     }
@@ -363,12 +393,16 @@ final class ScanRunner
             $link = trim((string) ($row['link'] ?? ''));
 
             if ($itemId > 0) {
-                $this->enqueue($scanId, $root . '/index.php?Itemid=' . $itemId, 0);
+                $sef = $this->menuUrl($root, $itemId);
+
+                if ($sef !== '') {
+                    $this->enqueue($scanId, $sef, 0, 'menu');
+                }
             }
 
             if ($link !== '' && preg_match('#^https?://#i', $link) === 1) {
                 try {
-                    $this->enqueue($scanId, $this->guard->assertSafe($link), 0);
+                    $this->enqueue($scanId, $this->guard->assertSafe($link), 0, 'menu');
                 } catch (\InvalidArgumentException) {
                     continue;
                 }
@@ -376,11 +410,53 @@ final class ScanRunner
         }
     }
 
-    private function enqueue(int $scanId, string $url, int $depth): void
+    private function menuUrl(string $root, int $itemId): string
     {
+        try {
+            $sef = Route::link('site', 'index.php?Itemid=' . $itemId, false, Route::TLS_IGNORE, true);
+        } catch (\Throwable) {
+            return '';
+        }
+
+        if (!\is_string($sef) || $sef === '' || str_contains($sef, 'Itemid=')) {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $sef) !== 1) {
+            $sef = $root . '/' . ltrim($sef, '/');
+        }
+
+        return $sef;
+    }
+
+    private function enqueue(int $scanId, string $url, int $depth, string $discovery = 'html_link', string $referrer = ''): void
+    {
+        $redacted = UrlPolicy::redact($url);
         $normalized = UrlPolicy::normalize($url);
 
-        if (!UrlPolicy::isSafeToCrawl($normalized) || $this->queueHas($scanId, $normalized)) {
+        if (!UrlPolicy::isSafeToCrawl($normalized)) {
+            $this->urls()->record($scanId, [
+                'original_url' => $redacted,
+                'normalized'   => $normalized,
+                'referrer_url' => $referrer,
+                'discovery'    => $discovery,
+                'outcome'      => 'excluded',
+                'reason'       => UrlPolicy::excludeReason($url),
+            ]);
+
+            return;
+        }
+
+        if ($this->queueHas($scanId, $normalized)) {
+            $this->urls()->record($scanId, [
+                'original_url' => $redacted,
+                'normalized'   => $normalized,
+                'referrer_url' => $referrer,
+                'discovery'    => $discovery,
+                'outcome'      => 'duplicate',
+                'reason'       => 'already_queued',
+            ]);
+
             return;
         }
 
@@ -389,7 +465,7 @@ final class ScanRunner
             ->columns(['scan_id', 'url', 'normalized', 'depth', 'status'])
             ->values(implode(',', [
                 $scanId,
-                $this->db->quote(mb_substr($url, 0, 1024)),
+                $this->db->quote(mb_substr($redacted, 0, 1024)),
                 $this->db->quote(mb_substr($normalized, 0, 512)),
                 $depth,
                 $this->db->quote('pending'),
@@ -401,11 +477,29 @@ final class ScanRunner
             $message = strtolower($exception->getMessage());
 
             if (str_contains($message, 'duplicate') || str_contains($message, '1062')) {
+                $this->urls()->record($scanId, [
+                    'original_url' => $redacted,
+                    'normalized'   => $normalized,
+                    'referrer_url' => $referrer,
+                    'discovery'    => $discovery,
+                    'outcome'      => 'duplicate',
+                    'reason'       => 'already_queued',
+                ]);
+
                 return;
             }
 
             throw $exception;
         }
+
+        $this->urls()->record($scanId, [
+            'original_url' => $redacted,
+            'normalized'   => $normalized,
+            'referrer_url' => $referrer,
+            'discovery'    => $discovery,
+            'outcome'      => 'queued',
+            'reason'       => '',
+        ]);
     }
 
     private function queueHas(int $scanId, string $normalized): bool
@@ -522,7 +616,7 @@ final class ScanRunner
     /**
      * @param  array<string, mixed>  $options
      */
-    private function finish(int $scanId, string $status, array $options, int $elapsedActive = 0): void
+    private function finish(int $scanId, string $status, array $options, int $elapsedActive = 0, string $completeReason = ''): void
     {
         $summary = $this->progress($scanId, $options, $status);
         $summary['percent'] = 100;
@@ -531,6 +625,7 @@ final class ScanRunner
         $summary['incomplete'] = $status !== 'complete';
         $summary['elapsed_active'] = $elapsedActive > 0 ? $elapsedActive : (int) ($summary['elapsed_active'] ?? 0);
         $summary['batch_lock_until'] = 0;
+        $summary['complete_reason'] = $completeReason !== '' ? $completeReason : (string) ($summary['complete_reason'] ?? '');
         $this->writeSummary($scanId, $summary, true);
     }
 
@@ -640,5 +735,86 @@ final class ScanRunner
         $this->db->setQuery($query);
 
         return (int) $this->db->loadResult();
+    }
+
+    private function urls(): ScanUrlStore
+    {
+        return new ScanUrlStore($this->db);
+    }
+
+    private function analyzedCount(int $scanId): int
+    {
+        if (!$this->urls()->available()) {
+            return $this->queueCount($scanId, 'done');
+        }
+
+        return $this->urls()->countOutcome($scanId, 'analyzed');
+    }
+
+    private function urlLogCount(int $scanId): int
+    {
+        if (!$this->urls()->available()) {
+            return 0;
+        }
+
+        $query = $this->db->getQuery(true)
+            ->select('COUNT(*)')
+            ->from($this->db->quoteName('#__joomcookies_scan_urls'))
+            ->where($this->db->quoteName('scan_id') . ' = ' . $scanId);
+        $this->db->setQuery($query);
+
+        return (int) $this->db->loadResult();
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $result
+     * @param  array<string, mixed>  $options
+     * @return array{store_findings: bool}
+     */
+    private function recordFetch(int $scanId, array $item, array $result, array $options): array
+    {
+        $itemNorm = UrlPolicy::normalize((string) $item['normalized']);
+        $finalNorm = UrlPolicy::normalize((string) ($result['url'] ?? $item['url']));
+        $canonical = (string) ($result['canonical'] ?? '');
+        $canonicalNorm = $canonical !== '' ? UrlPolicy::normalize($canonical) : '';
+        $outcome = 'analyzed';
+        $reason = '';
+        $storeFindings = true;
+
+        if ($finalNorm !== $itemNorm) {
+            $other = $this->urls()->find($scanId, $finalNorm);
+
+            if (\is_array($other) && (string) ($other['outcome'] ?? '') === 'analyzed') {
+                $outcome = 'duplicate';
+                $reason = 'redirect';
+                $storeFindings = false;
+            }
+        }
+
+        if ($outcome === 'analyzed' && $canonicalNorm !== '' && $canonicalNorm !== $itemNorm && $canonicalNorm !== $finalNorm) {
+            $this->enqueue($scanId, $canonical, (int) $item['depth'], 'canonical', (string) $item['url']);
+            $other = $this->urls()->find($scanId, $canonicalNorm);
+
+            if (\is_array($other) && (string) ($other['outcome'] ?? '') === 'analyzed') {
+                $outcome = 'duplicate';
+                $reason = 'canonical';
+                $storeFindings = false;
+            }
+        }
+
+        $this->urls()->record($scanId, [
+            'original_url'  => (string) $item['url'],
+            'normalized'    => $itemNorm,
+            'http_status'   => (int) ($result['status'] ?? 0),
+            'final_url'     => (string) ($result['url'] ?? ''),
+            'canonical_url' => $canonical,
+            'outcome'       => $outcome,
+            'reason'        => $reason,
+        ]);
+
+        unset($options);
+
+        return ['store_findings' => $storeFindings];
     }
 }
