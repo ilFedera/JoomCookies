@@ -61,11 +61,38 @@ final class UrlPolicy
         'token', 'password', 'passwd', 'pass', 'secret', 'key', 'api_key', 'apikey',
     ];
 
+    public static function isHttpUrl(string $url): bool
+    {
+        $url = trim($url);
+
+        if ($url === '' || str_starts_with($url, '#')) {
+            return false;
+        }
+
+        if (preg_match('#^([a-z][a-z0-9+.-]*):#i', $url, $match) === 1) {
+            $scheme = strtolower($match[1]);
+
+            return $scheme === 'http' || $scheme === 'https';
+        }
+
+        return true;
+    }
+
     public static function isSafeToCrawl(string $url): bool
     {
+        if (!self::isHttpUrl($url)) {
+            return false;
+        }
+
         $parts = parse_url($url);
 
-        if (!\is_array($parts)) {
+        if (!\is_array($parts) || empty($parts['host'])) {
+            return false;
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+
+        if ($scheme !== 'http' && $scheme !== 'https') {
             return false;
         }
 
@@ -102,6 +129,10 @@ final class UrlPolicy
             return '';
         }
 
+        if (!self::isHttpUrl($url)) {
+            return 'non_http_scheme';
+        }
+
         $path = strtolower((string) (parse_url($url, PHP_URL_PATH) ?? ''));
         $query = strtolower((string) (parse_url($url, PHP_URL_QUERY) ?? ''));
 
@@ -128,7 +159,12 @@ final class UrlPolicy
             return $url;
         }
 
-        $scheme = strtolower((string) ($parts['scheme'] ?? 'https'));
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+
+        if ($scheme !== 'http' && $scheme !== 'https') {
+            return $url;
+        }
+
         $host   = strtolower((string) $parts['host']);
         $path   = $parts['path'] ?? '/';
         $port   = (int) ($parts['port'] ?? 0);
@@ -168,6 +204,16 @@ final class UrlPolicy
 
     public static function redact(string $url): string
     {
+        $url = trim($url);
+
+        if ($url !== '' && preg_match('#^([a-z][a-z0-9+.-]*):#i', $url, $match) === 1) {
+            $scheme = strtolower($match[1]);
+
+            if ($scheme !== 'http' && $scheme !== 'https') {
+                return $scheme . ':';
+            }
+        }
+
         $redacted = preg_replace('/([?&](?:' . implode('|', self::SENSITIVE_PARAMS) . ')=)[^&]*/i', '$1***', $url);
 
         return \is_string($redacted) ? $redacted : $url;

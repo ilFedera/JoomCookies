@@ -92,6 +92,7 @@ include dirname(__DIR__) . '/_nav.php';
 		<div class="col-md-2"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_PAGES'); ?>: <span id="jck-scan-pages"><?php echo (int) ($progress['pages'] ?? $stats['pages'] ?? 0); ?></span></div>
 		<div class="col-md-2"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_PENDING'); ?>: <span id="jck-scan-pending"><?php echo (int) ($progress['pending'] ?? 0); ?></span></div>
 		<div class="col-md-2"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_ERRORS'); ?>: <span id="jck-scan-errors"><?php echo (int) ($progress['errors'] ?? 0); ?></span></div>
+		<div class="col-md-2"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_EXCLUDED'); ?>: <span id="jck-scan-excluded"><?php echo (int) ($progress['excluded'] ?? 0); ?></span></div>
 		<div class="col-md-2"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_ELAPSED'); ?>: <span id="jck-scan-elapsed"><?php echo (int) ($progress['elapsed_active'] ?? $progress['elapsed'] ?? 0); ?>s</span></div>
 		<div class="col-md-2"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_TOTAL'); ?>: <span id="jck-scan-findings"><?php echo (int) ($progress['findings'] ?? $stats['total'] ?? 0); ?></span></div>
 	</div>
@@ -297,7 +298,7 @@ $start = (int) ($filters['start'] ?? 0);
 	</nav>
 <?php endif; ?>
 <?php
-$scanJs = rtrim(Uri::root(true), '/') . '/media/com_joomcookies/js/scan.js?v=2.2.8';
+$scanJs = rtrim(Uri::root(true), '/') . '/media/com_joomcookies/js/scan.js?v=2.2.9';
 $wa = $this->getDocument()->getWebAssetManager();
 try {
 	$wa->getRegistry()->addExtensionRegistryFile('com_joomcookies');

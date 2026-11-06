@@ -169,6 +169,10 @@ final class ScanRunner
                     }
                 }
 
+                foreach ($result['discarded'] ?? [] as $discarded) {
+                    $this->recordDiscarded($scanId, $discarded, (string) $item['url']);
+                }
+
                 $this->markQueue($item['id'], 'done');
                 $processed = $this->analyzedCount($scanId);
                 $handled++;
@@ -249,6 +253,7 @@ final class ScanRunner
      */
     public function statusPayload(int $scanId, string $message = ''): array
     {
+        $this->reclaimAbandoned($scanId);
         $scan = $this->loadScan($scanId);
         $options = json_decode((string) ($scan['config'] ?? '{}'), true);
         $options = \is_array($options) ? $options : [];
@@ -433,6 +438,17 @@ final class ScanRunner
     private function enqueue(int $scanId, string $url, int $depth, string $discovery = 'html_link', string $referrer = ''): void
     {
         $redacted = UrlPolicy::redact($url);
+
+        if (!UrlPolicy::isHttpUrl($url)) {
+            $this->recordDiscarded($scanId, [
+                'original' => $url,
+                'url'      => '',
+                'reason'   => 'non_http_scheme',
+            ], $referrer, $discovery);
+
+            return;
+        }
+
         $normalized = UrlPolicy::normalize($url);
 
         if (!UrlPolicy::isSafeToCrawl($normalized)) {
@@ -501,6 +517,52 @@ final class ScanRunner
             'outcome'      => 'queued',
             'reason'       => '',
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function recordDiscarded(int $scanId, array $row, string $referrer, string $discovery = 'html_link'): void
+    {
+        $original = UrlPolicy::redact((string) ($row['original'] ?? $row['url'] ?? ''));
+        $normalized = $original;
+
+        if (UrlPolicy::isHttpUrl((string) ($row['url'] ?? ''))) {
+            $normalized = UrlPolicy::normalize((string) $row['url']);
+        }
+
+        $this->urls()->record($scanId, [
+            'original_url' => $original,
+            'normalized'   => $normalized,
+            'referrer_url' => $referrer,
+            'discovery'    => $discovery,
+            'outcome'      => 'excluded',
+            'reason'       => (string) ($row['reason'] ?? 'policy'),
+        ]);
+    }
+
+    private function reclaimAbandoned(int $scanId): void
+    {
+        if ($scanId < 1) {
+            return;
+        }
+
+        $scan = $this->loadScan($scanId);
+
+        if ($scan === null || (string) $scan['status'] !== 'running') {
+            return;
+        }
+
+        $summary = $this->summary($scan);
+        $lockUntil = (int) ($summary['batch_lock_until'] ?? 0);
+
+        if ($lockUntil > 0 && $lockUntil < (time() - 600)) {
+            $this->reclaimStuck($scanId);
+            $options = json_decode((string) ($scan['config'] ?? '{}'), true);
+            $progress = $this->progress($scanId, \is_array($options) ? $options : [], 'paused');
+            $progress['complete_reason'] = 'abandoned';
+            $this->writeSummary($scanId, $progress);
+        }
     }
 
     private function queueHas(int $scanId, string $normalized): bool

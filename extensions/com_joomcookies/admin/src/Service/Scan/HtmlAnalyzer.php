@@ -33,24 +33,9 @@ final class HtmlAnalyzer
     {
         $links = [];
 
-        if (preg_match_all('/<a\s[^>]*href=("([^"]*)"|\'([^\']*)\'|([^\s>]+))/i', $html, $matches, PREG_SET_ORDER) !== false) {
-            foreach ($matches as $match) {
-                $href = html_entity_decode($match[2] !== '' ? $match[2] : ($match[3] !== '' ? $match[3] : $match[4]), ENT_QUOTES, 'UTF-8');
-                $abs  = self::absolutize($href, $baseUrl);
-
-                if ($abs === null) {
-                    continue;
-                }
-
-                try {
-                    $safe = $guard->assertSafe($abs);
-                } catch (\InvalidArgumentException) {
-                    continue;
-                }
-
-                if (UrlPolicy::isSafeToCrawl($safe)) {
-                    $links[] = UrlPolicy::normalize($safe);
-                }
+        foreach (self::hrefRecords($html, $baseUrl, $guard) as $record) {
+            if ($record['ok'] && $record['url'] !== '') {
+                $links[] = $record['url'];
             }
         }
 
@@ -59,6 +44,55 @@ final class HtmlAnalyzer
         }
 
         return array_values(array_unique($links));
+    }
+
+    /**
+     * @return list<array{original: string, url: string, ok: bool, reason: string}>
+     */
+    public static function hrefRecords(string $html, string $baseUrl, SsrfGuard $guard): array
+    {
+        $out = [];
+
+        if (preg_match_all('/<a\s[^>]*href=("([^"]*)"|\'([^\']*)\'|([^\s>]+))/i', $html, $matches, PREG_SET_ORDER) === false) {
+            return $out;
+        }
+
+        foreach ($matches as $match) {
+            $href = html_entity_decode($match[2] !== '' ? $match[2] : ($match[3] !== '' ? $match[3] : $match[4]), ENT_QUOTES, 'UTF-8');
+            $href = trim($href);
+
+            if ($href === '' || str_starts_with($href, '#')) {
+                continue;
+            }
+
+            if (!UrlPolicy::isHttpUrl($href)) {
+                $out[] = ['original' => $href, 'url' => '', 'ok' => false, 'reason' => 'non_http_scheme'];
+                continue;
+            }
+
+            $abs = self::absolutize($href, $baseUrl);
+
+            if ($abs === null || !UrlPolicy::isHttpUrl($abs)) {
+                $out[] = ['original' => $href, 'url' => '', 'ok' => false, 'reason' => UrlPolicy::excludeReason($href) ?: 'non_http_scheme'];
+                continue;
+            }
+
+            try {
+                $safe = $guard->assertSafe($abs);
+            } catch (\InvalidArgumentException) {
+                $out[] = ['original' => $href, 'url' => $abs, 'ok' => false, 'reason' => 'ssrf'];
+                continue;
+            }
+
+            if (!UrlPolicy::isSafeToCrawl($safe)) {
+                $out[] = ['original' => $href, 'url' => $safe, 'ok' => false, 'reason' => UrlPolicy::excludeReason($safe)];
+                continue;
+            }
+
+            $out[] = ['original' => $href, 'url' => UrlPolicy::normalize($safe), 'ok' => true, 'reason' => ''];
+        }
+
+        return $out;
     }
 
     /**
@@ -132,8 +166,13 @@ final class HtmlAnalyzer
 
         foreach ($matches as $match) {
             $attrs = $match[1] ?? '';
-            $src = self::attr($attrs, 'src') ?: self::attr($attrs, 'data-jck-src');
             $id  = self::attr($attrs, 'id');
+
+            if ($id === 'joomcookies-gcm' || str_contains(strtolower($attrs), 'data-jck-ignore')) {
+                continue;
+            }
+
+            $src = self::attr($attrs, 'src') ?: self::attr($attrs, 'data-jck-src');
             $js  = $match[2] ?? '';
             $blocked = self::attr($attrs, 'data-jck-managed') !== ''
                 || str_contains(strtolower($attrs), 'text/plain');
@@ -210,11 +249,14 @@ final class HtmlAnalyzer
                     ? 'https://www.youtube.com/embed/' . $id
                     : $id;
                 $hit = ServiceCatalog::identify($target, '');
-                $out[] = self::finding('iframe', $hit['id'] ?? 'youtube', $target, $pageUrl, $hit, 'blocked', [
-                    'youtube_placeholder' => true,
-                    'blocked'             => true,
-                    'loaded'              => false,
-                ]);
+            $out[] = self::finding('iframe', $hit['id'] ?? 'youtube', $target, $pageUrl, $hit, 'blocked', [
+                'youtube_placeholder' => true,
+                'blocked'             => true,
+                'loaded'              => false,
+                'note'                => str_contains($target, 'youtube-nocookie')
+                    ? 'youtube-nocookie is still an embed and is not consent.'
+                    : '',
+            ]);
             }
         }
 
@@ -367,7 +409,11 @@ final class HtmlAnalyzer
     {
         $href = trim($href);
 
-        if ($href === '' || str_starts_with($href, '#') || str_starts_with($href, 'mailto:') || str_starts_with($href, 'javascript:') || str_starts_with($href, 'data:')) {
+        if ($href === '' || str_starts_with($href, '#')) {
+            return null;
+        }
+
+        if (!UrlPolicy::isHttpUrl($href)) {
             return null;
         }
 

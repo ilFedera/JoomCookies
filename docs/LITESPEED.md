@@ -32,7 +32,7 @@ Se una versione di LiteSpeed ignora questi attributi, le esclusioni URI sopra re
 
 ## Dopo un aggiornamento JoomCookies
 
-Gli URL CSS/JS portano `?v=` con la versione del package (es. `2.2.8`). Dopo l’upgrade:
+Gli URL CSS/JS portano `?v=` con la versione del package (es. `2.2.9`). Dopo l’upgrade:
 
 1. Svuotare la cache LiteSpeed (HTML + JS/CSS).
 2. Non è necessario svuotare i dati di consenso nel browser, salvo cambio di `consent_version`.
@@ -55,4 +55,4 @@ La diagnostica plugin (`diagnostic`) registra solo versione asset, categorie e c
 
 L’installazione **non** svuota la cache LiteSpeed in automatico (nessuna API di purge indiscriminato). Dopo l’upgrade svuotare HTML+JS/CSS dal pannello LiteSpeed.
 
-In questo ambiente di sviluppo **non** c’è Joomla 5.3.2 con LiteSpeed. La conferma su cache fredda/calda reale va fatta sul sito di test dopo l’installazione del ZIP 2.2.8.
+In questo ambiente di sviluppo **non** c’è Joomla 5.3.2 con LiteSpeed. La conferma su cache fredda/calda reale va fatta sul sito di test dopo l’installazione del ZIP 2.2.9.

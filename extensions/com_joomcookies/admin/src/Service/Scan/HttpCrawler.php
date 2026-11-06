@@ -144,17 +144,26 @@ final class HttpCrawler
         $links = [];
 
         foreach (CookieHeaderParser::parse($response->headers) as $cookie) {
+            $hit = CookieClassifier::suggest($cookie, $startHost);
+            $note = 'Observed in Set-Cookie of this site response.';
+
+            if ($hit === null && preg_match('/^[a-f0-9]{32}$/i', $cookie['name']) === 1) {
+                $note .= ' Hexadecimal name alone is not treated as a Joomla session cookie.';
+            }
+
             $findings[] = HtmlAnalyzer::finding(
                 'cookie_header',
                 $cookie['name'],
                 $response->url,
                 $response->url,
-                null,
+                $hit,
                 'observed',
                 [
-                    'domain'  => $cookie['domain'],
-                    'max_age' => $cookie['max_age'],
-                    'note'    => 'Observed in Set-Cookie of this site response.',
+                    'domain'   => $cookie['domain'],
+                    'max_age'  => $cookie['max_age'],
+                    'httponly' => !empty($cookie['httponly']),
+                    'path'     => $cookie['path'] ?? '/',
+                    'note'     => $note,
                 ]
             );
         }
@@ -163,6 +172,7 @@ final class HttpCrawler
 
         $sitemapLinks = [];
         $htmlLinks = [];
+        $discarded = [];
         $canonical = '';
 
         if (str_contains($type, 'xml') || str_ends_with($response->url, '.xml')) {
@@ -174,11 +184,19 @@ final class HttpCrawler
             $findings = array_merge($findings, HtmlAnalyzer::analyze($response->body, $response->url, $startHost));
             $canonicals = HtmlAnalyzer::canonicalUrls($response->body, $response->url, $guard);
             $canonical = $canonicals[0] ?? '';
+            $records = HtmlAnalyzer::hrefRecords($response->body, $response->url, $guard);
 
-            if ($depth < $maxDepth) {
-                $htmlLinks = HtmlAnalyzer::internalLinks($response->body, $response->url, $guard);
-                $links = array_merge($links, $htmlLinks);
+            foreach ($records as $record) {
+                if ($record['ok'] && $record['url'] !== '') {
+                    if ($depth < $maxDepth) {
+                        $htmlLinks[] = $record['url'];
+                    }
+                } else {
+                    $discarded[] = $record;
+                }
             }
+
+            $links = array_merge($links, $htmlLinks);
         }
 
         return [
@@ -188,6 +206,7 @@ final class HttpCrawler
             'links'         => array_values(array_unique($links)),
             'sitemap_links' => array_values(array_unique($sitemapLinks)),
             'html_links'    => array_values(array_unique($htmlLinks)),
+            'discarded'     => $discarded,
             'canonical'     => $canonical,
         ];
     }

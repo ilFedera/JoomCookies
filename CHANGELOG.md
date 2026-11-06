@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.9 — 2026-11-06
+
+- URL non HTTP (`viber:`, `tel:`, `mailto:`, …) esclusi prima della normalizzazione; non diventano percorsi del sito.
+- Cookie di sessione Joomla suggerito solo con attributi Set-Cookie (HttpOnly, first-party, sessione), non dal solo nome esadecimale.
+- reCAPTCHA non è più classificato automaticamente come necessario; Google Fonts e Font Awesome sono riconosciuti come non classificati.
+- Lo stub Consent Mode non viene segnalato come Analytics; scansioni `running` abbandonate vengono messe in pausa.
+
 ## 2.2.8 — 2026-11-06
 
 - Corretto il parse error PHP nella pagina Scansione (`<?php` duplicato nel template).

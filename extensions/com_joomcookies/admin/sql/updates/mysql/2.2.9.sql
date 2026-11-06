@@ -1,0 +1,1 @@
+-- 2.2.9: scanner URL schemes, cookie classification, abandoned scan pause. No schema change.

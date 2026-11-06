@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\CookieClassifier;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HtmlAnalyzer;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HttpCrawler;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HttpResponse;
@@ -25,10 +26,42 @@ assertTrue(ScanLimits::percent(16, 350, 10, 'running') === 99, 'Quick-scan perce
 assertTrue(ScanLimits::percent(32, 350, 0, 'running') === 9, 'Full-scan percent uses discovered URLs');
 assertTrue(UrlPolicy::isSafeToCrawl('https://example.test/') === true, 'Public homepage is crawlable');
 assertTrue(UrlPolicy::isSafeToCrawl('https://example.test/administrator') === false, 'Administrator is not crawled');
+assertTrue(UrlPolicy::isHttpUrl('viber://forward') === false, 'viber is not an HTTP URL');
+assertTrue(UrlPolicy::isHttpUrl('tel:+390000') === false, 'tel is not an HTTP URL');
+assertTrue(UrlPolicy::isHttpUrl('mailto:info@example.test') === false, 'mailto is not an HTTP URL');
+assertTrue(UrlPolicy::isHttpUrl('whatsapp://send') === false, 'whatsapp is not an HTTP URL');
+assertTrue(UrlPolicy::isHttpUrl('javascript:void(0)') === false, 'javascript URLs are rejected');
+assertTrue(HtmlAnalyzer::absolutize('viber://forward', 'https://example.test/page') === null, 'viber is not resolved as a site path');
+assertTrue(HtmlAnalyzer::absolutize('tel:+390000', 'https://example.test/page') === null, 'tel is not resolved as a site path');
+assertTrue(UrlPolicy::redact('tel:+390123456') === 'tel:', 'Telephone numbers are not stored in URL logs');
+$schemeGuard = new SsrfGuard(['example.test'], false);
+$schemeLinks = HtmlAnalyzer::internalLinks(
+    '<a href="viber://forward">v</a><a href="mailto:a@b.c">m</a><a href="/ok">o</a><a href="https://example.test/ok#frag">d</a>',
+    'https://example.test/page',
+    $schemeGuard
+);
+assertTrue($schemeLinks === ['https://example.test/ok'], 'Only HTTP(S) page links are queued');
+$discarded = array_column(array_filter(HtmlAnalyzer::hrefRecords(
+    '<a href="viber://forward">v</a>',
+    'https://example.test/page',
+    $schemeGuard
+), static fn ($row) => !$row['ok']), 'reason');
+assertTrue(\in_array('non_http_scheme', $discarded, true), 'Non-HTTP hrefs are recorded as excluded, not crawled');
+
+$hex = 'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+assertTrue(CookieClassifier::suggest(['name' => $hex, 'domain' => '', 'max_age' => 31536000, 'httponly' => false, 'path' => '/'], 'example.test') === null, 'Hex cookie name with a long Max-Age is not called a Joomla session');
+$sessionHit = CookieClassifier::suggest(['name' => $hex, 'domain' => 'example.test', 'max_age' => null, 'httponly' => true, 'path' => '/'], 'example.test');
+assertTrue($sessionHit !== null && $sessionHit['id'] === 'joomla-session' && $sessionHit['category'] === 'necessary', 'First-party HttpOnly session hex cookie can be suggested as Joomla session');
+$gcm = HtmlAnalyzer::analyze('<script id="joomcookies-gcm">gtag("consent","default");</script>', 'https://example.test/', 'example.test');
+assertTrue(array_column($gcm, 'service_id') === [], 'Consent Mode stub is not reported as Google Analytics');
+assertTrue(ServiceCatalog::identify('https://www.google.com/recaptcha/api.js')['category'] === 'unclassified', 'reCAPTCHA is suggested unclassified for admin review');
+assertTrue(ServiceCatalog::identify('https://fonts.googleapis.com/css2?family=Roboto')['id'] === 'google-fonts', 'Google Fonts stylesheet host is recognised');
+assertTrue(ServiceCatalog::identify('https://kit.fontawesome.com/abc.js')['id'] === 'font-awesome', 'Font Awesome kit host is recognised');
 
 $runnerSrc = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/src/Service/Scan/ScanRunner.php') ?: '';
 assertTrue(substr_count($runnerSrc, 'return $this->processBatch($scanId);') >= 1, 'scan.start processes the first batch');
 assertTrue(str_contains($runnerSrc, 'reclaimStuck'), 'Stuck running queue rows are reclaimed');
+assertTrue(str_contains($runnerSrc, 'reclaimAbandoned'), 'Abandoned running scans are paused instead of staying locked');
 assertTrue(str_contains($runnerSrc, 'queueCount($scanId, \'done\')'), 'Page cap uses live done count, not a stale summary');
 assertTrue(str_contains($runnerSrc, 'elapsed_active'), 'Active elapsed time is persisted');
 assertTrue(str_contains($runnerSrc, "\$payload['busy'] = true"), 'Overlapping batches are rejected instead of duplicated');

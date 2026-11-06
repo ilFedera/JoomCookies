@@ -169,6 +169,7 @@
     setText('jck-scan-pages', progress.pages || 0);
     setText('jck-scan-pending', progress.pending || 0);
     setText('jck-scan-errors', progress.errors || 0);
+    setText('jck-scan-excluded', progress.excluded || 0);
     setText('jck-scan-elapsed', (progress.elapsed_active || progress.elapsed || 0) + 's');
     setText('jck-scan-percent', (progress.estimated ? '~' : '') + percent + '%');
     var reasonEl = $('jck-scan-complete-reason');

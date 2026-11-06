@@ -13,7 +13,7 @@ final class CookieHeaderParser
 {
     /**
      * @param  array<string, mixed>  $headers
-     * @return list<array{name: string, domain: string, max_age: ?int, raw: string}>
+     * @return list<array{name: string, domain: string, max_age: ?int, httponly: bool, secure: bool, path: string, raw: string}>
      */
     public static function parse(array $headers): array
     {
@@ -43,7 +43,7 @@ final class CookieHeaderParser
     }
 
     /**
-     * @return array{name: string, domain: string, max_age: ?int, raw: string}|null
+     * @return array{name: string, domain: string, max_age: ?int, httponly: bool, secure: bool, path: string, raw: string}|null
      */
     public static function parseLine(string $line): ?array
     {
@@ -69,6 +69,9 @@ final class CookieHeaderParser
 
         $domain = '';
         $maxAge = null;
+        $httpOnly = false;
+        $secure = false;
+        $path = '/';
 
         foreach ($parts as $attr) {
             $attr = trim($attr);
@@ -78,6 +81,18 @@ final class CookieHeaderParser
 
             if ($key === 'domain') {
                 $domain = strtolower(ltrim($val, '.'));
+            }
+
+            if ($key === 'path') {
+                $path = $val !== '' ? $val : '/';
+            }
+
+            if ($key === 'httponly') {
+                $httpOnly = true;
+            }
+
+            if ($key === 'secure') {
+                $secure = true;
             }
 
             if ($key === 'max-age' && is_numeric($val)) {
@@ -91,10 +106,13 @@ final class CookieHeaderParser
         }
 
         return [
-            'name'    => $name,
-            'domain'  => $domain,
-            'max_age' => $maxAge,
-            'raw'     => $name,
+            'name'     => $name,
+            'domain'   => $domain,
+            'max_age'  => $maxAge,
+            'httponly' => $httpOnly,
+            'secure'   => $secure,
+            'path'     => $path,
+            'raw'      => $name,
         ];
     }
 }
