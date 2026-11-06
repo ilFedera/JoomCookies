@@ -43,7 +43,10 @@ include dirname(__DIR__) . '/_nav.php';
 	<input type="hidden" name="task" value="scan.start">
 	<input type="hidden" name="scan_id" value="<?php echo $scanId; ?>">
 	<div class="d-flex flex-wrap gap-2 mb-3">
-		<button class="btn btn-primary" type="submit" id="jck-scan-start"<?php echo $status === 'running' ? ' disabled' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_START'); ?></button>
+		<button class="btn btn-primary" type="submit" id="jck-scan-start"<?php echo $status === 'running' ? ' disabled' : ''; ?>>
+			<span class="spinner-border spinner-border-sm me-1" id="jck-scan-start-spinner" role="status" aria-hidden="true" hidden></span>
+			<span id="jck-scan-start-label"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_START'); ?></span>
+		</button>
 	</div>
 	<?php echo $this->token; ?>
 </form>
@@ -110,18 +113,10 @@ include dirname(__DIR__) . '/_nav.php';
 			<label class="form-label" for="scan_max_depth"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_MAX_DEPTH'); ?></label>
 			<input class="form-control" id="scan_max_depth" type="number" name="jform[scan_max_depth]" value="<?php echo (int) $page['limits']['max_depth']; ?>" min="0" max="8">
 		</div>
-		<div class="col-md-3">
+		<div class="col-md-4">
 			<label class="form-label" for="scan_max_seconds"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_MAX_SECONDS'); ?></label>
 			<input class="form-control" id="scan_max_seconds" type="number" name="jform[scan_max_seconds]" value="<?php echo (int) $page['limits']['max_seconds']; ?>" min="3" max="25">
 			<div class="form-text"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_MAX_SECONDS_DESC'); ?></div>
-		</div>
-		<div class="col-md-3">
-			<label class="form-label" for="scan_discovery"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY'); ?></label>
-			<select class="form-select" id="scan_discovery" name="jform[scan_discovery]">
-				<option value="html"<?php echo ($page['limits']['discovery'] ?? '') === 'html' ? ' selected' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY_HTML'); ?></option>
-				<option value="sitemap"<?php echo ($page['limits']['discovery'] ?? '') === 'sitemap' ? ' selected' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY_SITEMAP'); ?></option>
-				<option value="combined"<?php echo ($page['limits']['discovery'] ?? '') === 'combined' ? ' selected' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_DISCOVERY_COMBINED'); ?></option>
-			</select>
 		</div>
 	</div>
 	<button class="btn btn-secondary mt-2" type="submit"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_SAVE_LIMITS'); ?></button>
@@ -298,7 +293,7 @@ $start = (int) ($filters['start'] ?? 0);
 	</nav>
 <?php endif; ?>
 <?php
-$scanJs = rtrim(Uri::root(true), '/') . '/media/com_joomcookies/js/scan.js?v=2.2.11';
+$scanJs = rtrim(Uri::root(true), '/') . '/media/com_joomcookies/js/scan.js?v=2.2.12';
 $wa = $this->getDocument()->getWebAssetManager();
 try {
 	$wa->getRegistry()->addExtensionRegistryFile('com_joomcookies');

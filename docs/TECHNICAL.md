@@ -1,4 +1,4 @@
-# Documentazione tecnica JoomCookies 2.2.11
+# Documentazione tecnica JoomCookies 2.2.12
 
 ## Architettura
 
@@ -120,6 +120,12 @@ Metodi di scoperta:
 Ogni URL considerato è scritto in `#__joomcookies_scan_urls` e resta consultabile dopo il completamento. La scansione rapida può terminare per limite di pagine con coda ancora piena; quella completa termina quando la coda è vuota.
 
 Un worker Playwright non è incluso e non deve girare nella richiesta PHP dell’hosting condiviso.
+
+## Interventi della 2.2.12
+
+- Hint reCAPTCHA indipendente da `.jck-embed` (niente `aspect-ratio` 16:9 sul modulo).
+- Coda sitemap: direttive `Sitemap:` di `robots.txt`, fallback unico `/sitemap.xml`.
+- Esiti URL: HTTP 4xx come `error` (`http_404`), non `analyzed`.
 
 ## Interventi della 2.2.11
 

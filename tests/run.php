@@ -176,8 +176,14 @@ assertTrue(preg_match('#<script src="/media/templates/site/cassiopeia/js/templat
 assertTrue(str_contains($yooBlocked, 'data-jck-src="https://www.google.com/recaptcha/api.js"') && str_contains($yooBlocked, 'data-jck-service="recaptcha-api"'), 'reCAPTCHA blocked before consent');
 $convertFormsBlocked = $guard->process('<script src="/media/com_convertforms/js/recaptcha_v3.js?abc"></script>');
 assertTrue(str_contains($convertFormsBlocked, 'data-jck-service="recaptcha-convertforms"') && str_contains($convertFormsBlocked, 'type="text/plain"'), 'Convert Forms reCAPTCHA adapter blocked');
-assertTrue(str_contains($convertFormsBlocked, 'data-jck-consent-hint="embeds"'), 'Blocked reCAPTCHA explains how to authorize the form');
+assertTrue(str_contains($convertFormsBlocked, 'class="jck-consent-hint"') && str_contains($convertFormsBlocked, 'data-jck-consent-hint="embeds"'), 'Blocked reCAPTCHA explains how to authorize the form');
+assertTrue(!str_contains($convertFormsBlocked, 'jck-embed'), 'reCAPTCHA hint does not reuse the YouTube 16:9 embed box');
 assertTrue(!str_contains($convertFormsBlocked, '<video'), 'HtmlGuard does not invent video-tag rewrites');
+$cfForm = $guard->process('<form class="convertforms" method="post"><input type="hidden" name="' . htmlspecialchars('dummy') . '" value="1"><script src="/media/com_convertforms/js/recaptcha_v3.js"></script></form>');
+assertTrue(preg_match('#<form class="convertforms"[^>]*>\\s*<div class="jck-consent-hint"#', $cfForm) === 1, 'Consent hint is inserted inside the Convert Forms form without replacing it');
+$headBlocked = $guard->process('<html><head><script src="https://www.google.com/recaptcha/api.js"></script></head><body><p>Contact</p></body></html>');
+assertTrue(!preg_match('#<head>.*jck-consent-hint.*</head>#s', $headBlocked), 'Consent hint is not injected into HEAD');
+assertTrue(str_contains($headBlocked, '</p><div class="jck-consent-hint"') || str_contains($headBlocked, 'jck-consent-hint') && str_contains($headBlocked, '</body>'), 'Head-only reCAPTCHA still gets a compact body hint');
 $frontendJs = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/js/joomcookies.js') ?: '';
 assertTrue(str_contains($frontendJs, 'syncConsentHints'), 'Consent hints hide after External content is allowed');
 assertTrue(str_contains($yooBlocked, 'data-jck-category="statistics"') && str_contains($yooBlocked, 'googletagmanager.com/gtag/js'), 'Inline gtag/js loader is blocked');

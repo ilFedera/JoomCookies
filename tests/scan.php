@@ -88,7 +88,9 @@ assertTrue(str_contains($tmpl, 'form.submit()'), 'Watchdog continues a running s
 assertTrue(!str_contains($tmpl, "<?php\n<?php"), 'Scan template does not nest PHP open tags');
 assertTrue(!str_contains($runnerSrc, 'jlsitemap') && !str_contains($runnerSrc, 'com_jlsitemap'), 'Scanner does not call JL Sitemap');
 assertTrue(str_contains($tmpl, 'COM_JOOMCOOKIES_SCAN_URLS'), 'Scan page lists discovered URLs');
-assertTrue(str_contains($tmpl, 'name="discovery"'), 'Scan form offers a discovery method');
+assertTrue(str_contains($tmpl, 'name="discovery"') && !str_contains($tmpl, 'id="scan_discovery"'), 'Scan form offers a single discovery method selector');
+assertTrue(str_contains($tmpl, 'jck-scan-start-spinner'), 'Start button includes a spinner');
+assertTrue(str_contains($js, 'setStartBusy(true)'), 'Start spinner is shown immediately and the button is disabled');
 assertTrue(str_contains($tmpl, 'scan.urlsCsv'), 'Discovered URLs can be exported as CSV');
 assertTrue(!str_contains($runnerSrc, '$root . \'/index.php?Itemid='), 'Menu seeding does not enqueue raw Itemid URLs');
 assertTrue(str_contains($runnerSrc, 'complete_reason'), 'Completion reason distinguishes page cap from empty queue');
@@ -192,3 +194,21 @@ $anomalies = array_values(array_filter($video, static fn ($row) => ($row['type']
 assertTrue($anomalies !== [] && !empty($anomalies[0]['meta']['malformed_video_embed']), 'YouTube /embed/ inside a video tag is flagged');
 assertTrue(empty($anomalies[0]['meta']['rewritten']), 'Malformed YouTube video tags are not rewritten');
 assertTrue(str_contains($runnerSrc, 'CatalogSync'), 'Completed scans upsert the service catalogue');
+assertTrue(!str_contains($runnerSrc, 'sitemap_index.xml'), 'Scanner does not guess sitemap_index.xml when robots.txt has no Sitemap');
+assertTrue(str_contains($runnerSrc, 'http_404'), 'HTTP 404 is recorded as an error outcome');
+
+$missing = (new HttpCrawler())->fetchPage(
+    'https://example.test/missing',
+    0,
+    1,
+    new class () implements HttpTransport {
+        public function get(string $url, int $timeout, int $maxBytes): HttpResponse
+        {
+            return new HttpResponse(404, '<html><script src="https://www.google-analytics.com/analytics.js"></script></html>', [], $url);
+        }
+    },
+    $schemeGuard,
+    2,
+    20000
+);
+assertTrue((int) $missing['status'] === 404 && $missing['findings'] === [], 'HTTP 404 is not analysed as a successful page');

@@ -63,6 +63,8 @@ class ScanController extends BaseController
             'batch_size'  => (int) SettingsStore::get('scan_batch_size', 8),
         ];
 
+        SettingsStore::set('scan_discovery', $options['discovery']);
+
         if ($options['scan_mode'] === ScanLimits::MODE_COMPLETE) {
             $options['max_pages'] = 0;
             $options['max_depth'] = max($options['max_depth'], 5);

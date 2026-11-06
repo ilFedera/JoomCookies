@@ -32,7 +32,7 @@ final class HtmlGuard
      */
     private array $blocked = [];
 
-    private bool $recaptchaNotice = false;
+    private bool $recaptchaBlocked = false;
 
     /**
      * @param  array<string, mixed>  $options
@@ -55,7 +55,7 @@ final class HtmlGuard
 
     public function process(string $html): string
     {
-        $this->recaptchaNotice = false;
+        $this->recaptchaBlocked = false;
         $this->blocked = [];
         $html = $this->replaceShortcodes($html);
         $html = $this->replacePreferenceShortcodes($html);
@@ -63,6 +63,7 @@ final class HtmlGuard
         $html = preg_replace_callback('#<iframe(\s[^>]*)?>.*?</iframe>#is', [$this, 'replaceIframe'], $html) ?? $html;
         $html = preg_replace_callback('#<iframe(\s[^>]*)?/>#is', [$this, 'replaceIframe'], $html) ?? $html;
         $html = $this->enhanceYoutubePlayers($html);
+        $html = $this->injectRecaptchaHint($html);
 
         return $html;
     }
@@ -114,14 +115,11 @@ final class HtmlGuard
             $extra .= ' data-jck-type="' . htmlspecialchars($originalType, ENT_QUOTES, 'UTF-8') . '"';
         }
 
-        $out = '<script' . $attrs . $extra . '>' . $content . '</script>';
-
-        if ($this->isRecaptchaService($hit['id']) && !$this->recaptchaNotice) {
-            $this->recaptchaNotice = true;
-            $out .= $this->recaptchaConsentNotice();
+        if ($this->isRecaptchaService($hit['id'])) {
+            $this->recaptchaBlocked = true;
         }
 
-        return $out;
+        return '<script' . $attrs . $extra . '>' . $content . '</script>';
     }
 
     /**
@@ -231,20 +229,39 @@ final class HtmlGuard
         return str_starts_with($id, 'recaptcha');
     }
 
+    private function injectRecaptchaHint(string $html): string
+    {
+        if (!$this->recaptchaBlocked || str_contains($html, 'data-jck-consent-hint="embeds"')) {
+            return $html;
+        }
+
+        $notice = $this->recaptchaConsentNotice();
+
+        if (preg_match('/<form\b[^>]{0,500}(?:convertforms|com-convertforms|com_convertforms)[^>]*>/i', $html, $match, PREG_OFFSET_CAPTURE) === 1) {
+            $at = $match[0][1] + \strlen($match[0][0]);
+
+            return substr($html, 0, $at) . $notice . substr($html, $at);
+        }
+
+        if (preg_match('/<\/body>/i', $html) === 1) {
+            return preg_replace('/<\/body>/i', $notice . '</body>', $html, 1) ?? ($html . $notice);
+        }
+
+        return $html . $notice;
+    }
+
     private function recaptchaConsentNotice(): string
     {
-        $label = htmlspecialchars((string) ($this->options['embed_blocked_label'] ?? 'External content blocked'), ENT_QUOTES, 'UTF-8');
-        $help  = htmlspecialchars((string) ($this->options['embed_help'] ?? $this->options['youtube_help'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $help  = htmlspecialchars((string) ($this->options['embed_help'] ?? ''), ENT_QUOTES, 'UTF-8');
         $prefs = htmlspecialchars((string) ($this->options['open_prefs_label'] ?? 'Cookie preferences'), ENT_QUOTES, 'UTF-8');
 
         if ($help === '') {
             $help = 'Authorize External content in the privacy preferences to use forms protected by reCAPTCHA.';
         }
 
-        return '<div class="jck-embed jck-embed--notice" data-jck-consent-hint="embeds" role="status">'
-            . '<p class="jck-embed__title">' . $label . '</p>'
-            . '<p class="jck-embed__text">' . $help . '</p>'
-            . '<button type="button" class="jck-embed__button" data-jck-open-prefs="1">' . $prefs . '</button>'
+        return '<div class="jck-consent-hint" data-jck-consent-hint="embeds" role="status">'
+            . '<p class="jck-consent-hint__text">' . $help . '</p>'
+            . '<button type="button" class="jck-consent-hint__button" data-jck-open-prefs="1">' . $prefs . '</button>'
             . '</div>';
     }
 

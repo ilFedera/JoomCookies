@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.joomla.org/schemas/json-schema/v1/web_assets.json",
   "name": "com_joomcookies",
-  "version": "2.2.11",
+  "version": "2.2.12",
   "description": "JoomCookies administrator assets",
   "license": "GPL-2.0-or-later",
   "assets": [
@@ -9,7 +9,7 @@
       "name": "com_joomcookies.scan",
       "type": "script",
       "uri": "js/scan.js",
-      "version": "2.2.11",
+      "version": "2.2.12",
       "attributes": {
         "defer": true
       }

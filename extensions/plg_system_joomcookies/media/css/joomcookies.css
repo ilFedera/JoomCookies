@@ -520,3 +520,59 @@ html.jck-prefs-open {
     text-align: center;
   }
 }
+
+.jck-consent-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.5rem 0.75rem;
+  width: auto;
+  max-width: min(36rem, 100%);
+  margin: 0.75rem 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  background: var(--jck-bg, #0f172a);
+  color: var(--jck-text, #f8fafc);
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: auto;
+  container-type: normal;
+}
+
+.jck-consent-hint[hidden] {
+  display: none !important;
+}
+
+.jck-consent-hint__text {
+  margin: 0;
+  flex: 1 1 12rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--jck-text, #f8fafc);
+}
+
+.jck-consent-hint__button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: auto;
+  height: auto;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0.35rem 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--jck-accent, #2563eb);
+  color: var(--jck-btn-text, #fff);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+}

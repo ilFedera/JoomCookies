@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.12 — 2026-11-06
+
+- Avviso reCAPTCHA compatto (`.jck-consent-hint`) al posto del placeholder YouTube 16:9, così «Rifiuta tutti» non distorce i moduli Convert Forms.
+- Lo script reCAPTCHA resta bloccato prima del consenso; l’avviso non sostituisce il markup del form.
+- Spinner sul pulsante «Avvia scansione» e blocco dei doppi avvii.
+- Un solo selettore «Metodo di scoperta» nel form di avvio.
+- Sitemap lette da `robots.txt`; `/sitemap.xml` solo come fallback; HTTP 404 non conta come pagina analizzata.
+
 ## 2.2.11 — 2026-11-06
 
 - Catalogo servizi popolato dalla scansione (ID stabile, niente duplicati) e dalle regole incorporate, senza sovrascrivere classificazioni manuali o approvate.

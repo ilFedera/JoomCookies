@@ -174,7 +174,12 @@ final class ScanRunner
                     $this->recordDiscarded($scanId, $discarded, (string) $item['url']);
                 }
 
-                $this->markQueue($item['id'], 'done');
+                $statusCode = (int) ($result['status'] ?? 0);
+                if ($statusCode >= 400 || $statusCode === 0) {
+                    $this->markQueue($item['id'], 'error', 'HTTP ' . $statusCode);
+                } else {
+                    $this->markQueue($item['id'], 'done');
+                }
                 $processed = $this->analyzedCount($scanId);
                 $handled++;
 
@@ -346,34 +351,36 @@ final class ScanRunner
         }
 
         $origin = $scheme . '://' . $host;
-        $this->enqueue($scanId, $origin . '/sitemap.xml', 0, 'sitemap');
-        $this->enqueue($scanId, $origin . '/sitemap_index.xml', 0, 'sitemap');
         $timeout = ScanLimits::timeout($options);
         $maxBytes = ScanLimits::maxBytes($options);
+        $declared = [];
 
         try {
             $safe = $this->guard->assertSafe($origin . '/robots.txt');
             $response = $this->transport->get($safe, $timeout, $maxBytes);
-        } catch (\Throwable) {
-            return;
-        }
-
-        if ($response->status >= 400) {
-            return;
-        }
-
-        if (preg_match_all('/^sitemap:\s*(\S+)/im', $response->body, $matches)) {
-            foreach ($matches[1] as $sitemap) {
-                try {
-                    $this->enqueue($scanId, $this->guard->assertSafe(trim((string) $sitemap)), 0, 'sitemap');
-                } catch (\InvalidArgumentException) {
-                    $this->urls()->record($scanId, [
-                        'original_url' => trim((string) $sitemap),
-                        'outcome'      => 'excluded',
-                        'reason'       => 'offsite_sitemap',
-                        'discovery'    => 'sitemap',
-                    ]);
+            if ($response->status < 400 && preg_match_all('/^sitemap:\s*(\S+)/im', $response->body, $matches)) {
+                foreach ($matches[1] as $sitemap) {
+                    $declared[] = trim((string) $sitemap);
                 }
+            }
+        } catch (\Throwable) {
+            $declared = [];
+        }
+
+        if ($declared === []) {
+            $declared[] = $origin . '/sitemap.xml';
+        }
+
+        foreach (array_unique($declared) as $sitemap) {
+            try {
+                $this->enqueue($scanId, $this->guard->assertSafe($sitemap), 0, 'sitemap');
+            } catch (\InvalidArgumentException) {
+                $this->urls()->record($scanId, [
+                    'original_url' => $sitemap,
+                    'outcome'      => 'excluded',
+                    'reason'       => 'offsite_sitemap',
+                    'discovery'    => 'sitemap',
+                ]);
             }
         }
     }
@@ -852,11 +859,20 @@ final class ScanRunner
         $finalNorm = UrlPolicy::normalize((string) ($result['url'] ?? $item['url']));
         $canonical = (string) ($result['canonical'] ?? '');
         $canonicalNorm = $canonical !== '' ? UrlPolicy::normalize($canonical) : '';
+        $statusCode = (int) ($result['status'] ?? 0);
         $outcome = 'analyzed';
         $reason = '';
         $storeFindings = true;
 
-        if ($finalNorm !== $itemNorm) {
+        if ($statusCode >= 400 || $statusCode === 0) {
+            $outcome = 'error';
+            $reason = $statusCode === 404 ? 'http_404' : ('http_' . $statusCode);
+            $storeFindings = false;
+        } elseif ($finalNorm !== $itemNorm) {
+            $reason = 'redirect';
+        }
+
+        if ($outcome === 'analyzed' && $finalNorm !== $itemNorm) {
             $other = $this->urls()->find($scanId, $finalNorm);
 
             if (\is_array($other) && (string) ($other['outcome'] ?? '') === 'analyzed') {

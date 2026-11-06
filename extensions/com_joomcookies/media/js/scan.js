@@ -15,6 +15,7 @@
   var tickTimer = null;
   var elapsedBase = 0;
   var elapsedAt = 0;
+  var startBusy = false;
 
   function $(id) {
     return document.getElementById(id);
@@ -121,13 +122,28 @@
     });
   }
 
+  function setStartBusy(busy) {
+    startBusy = !!busy;
+    var spin = $('jck-scan-start-spinner');
+    var startBtn = $('jck-scan-start');
+    if (spin) {
+      spin.hidden = !startBusy;
+    }
+    if (startBtn) {
+      startBtn.setAttribute('aria-busy', startBusy ? 'true' : 'false');
+      if (startBusy) {
+        startBtn.disabled = true;
+      }
+    }
+  }
+
   function applyButtons(status) {
     var startBtn = $('jck-scan-start');
     var pauseBtn = $('jck-scan-pause');
     var resumeBtn = $('jck-scan-resume');
     var cancelBtn = $('jck-scan-cancel');
     if (startBtn) {
-      startBtn.disabled = status === 'running';
+      startBtn.disabled = startBusy || status === 'running';
     }
     if (pauseBtn) {
       pauseBtn.disabled = status !== 'running';
@@ -156,6 +172,7 @@
 
   function render(payload) {
     showError('');
+    setStartBusy(false);
     var progress = payload.progress || {};
     var status = progress.status || payload.status || '';
     var percent = status === 'complete' ? 100 : (progress.percent_final || progress.percent || 0);
@@ -269,6 +286,9 @@
     if (inFlight && task !== 'scan.pause' && task !== 'scan.cancel') {
       return;
     }
+    if (task === 'scan.start') {
+      setStartBusy(true);
+    }
     inFlight = true;
     post(task).then(function (payload) {
       inFlight = false;
@@ -279,6 +299,8 @@
       render(payload);
     }).catch(function (err) {
       inFlight = false;
+      setStartBusy(false);
+      applyButtons((($('jck-scan-status') && $('jck-scan-status').textContent) || '').trim());
       showError(err && err.message ? err.message : 'Scan request failed.');
     });
   }

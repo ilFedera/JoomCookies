@@ -59,6 +59,11 @@ final class HttpCrawler
                 continue;
             }
 
+            if ($response->status >= 400 || $response->status === 0) {
+                $errors[] = 'HTTP ' . $response->status;
+                continue;
+            }
+
             $pages[] = [
                 'url'    => $response->url,
                 'status' => $response->status,
@@ -142,45 +147,43 @@ final class HttpCrawler
         $startHost = strtolower((string) parse_url($response->url, PHP_URL_HOST));
         $findings = [];
         $links = [];
-
-        foreach (CookieHeaderParser::parse($response->headers) as $cookie) {
-            $hit = CookieClassifier::suggest($cookie, $startHost);
-            $note = 'Observed in Set-Cookie of this site response.';
-
-            if ($hit === null && preg_match('/^[a-f0-9]{32}$/i', $cookie['name']) === 1) {
-                $note .= ' Hexadecimal name alone is not treated as a Joomla session cookie.';
-            }
-
-            $findings[] = HtmlAnalyzer::finding(
-                'cookie_header',
-                $cookie['name'],
-                $response->url,
-                $response->url,
-                $hit,
-                'observed',
-                [
-                    'domain'   => $cookie['domain'],
-                    'max_age'  => $cookie['max_age'],
-                    'httponly' => !empty($cookie['httponly']),
-                    'path'     => $cookie['path'] ?? '/',
-                    'note'     => $note,
-                ]
-            );
-        }
-
         $type = strtolower((string) ($response->headers['content-type'] ?? ''));
-
         $sitemapLinks = [];
         $htmlLinks = [];
         $discarded = [];
         $canonical = '';
 
-        if (str_contains($type, 'xml') || str_ends_with($response->url, '.xml')) {
-            $sitemapLinks = HtmlAnalyzer::sitemapUrls($response->body, $guard);
-            $links = array_merge($links, $sitemapLinks);
-        }
-
         if ($response->status >= 200 && $response->status < 400) {
+            foreach (CookieHeaderParser::parse($response->headers) as $cookie) {
+                $hit = CookieClassifier::suggest($cookie, $startHost);
+                $note = 'Observed in Set-Cookie of this site response.';
+
+                if ($hit === null && preg_match('/^[a-f0-9]{32}$/i', $cookie['name']) === 1) {
+                    $note .= ' Hexadecimal name alone is not treated as a Joomla session cookie.';
+                }
+
+                $findings[] = HtmlAnalyzer::finding(
+                    'cookie_header',
+                    $cookie['name'],
+                    $response->url,
+                    $response->url,
+                    $hit,
+                    'observed',
+                    [
+                        'domain'   => $cookie['domain'],
+                        'max_age'  => $cookie['max_age'],
+                        'httponly' => !empty($cookie['httponly']),
+                        'path'     => $cookie['path'] ?? '/',
+                        'note'     => $note,
+                    ]
+                );
+            }
+
+            if (str_contains($type, 'xml') || str_ends_with($response->url, '.xml')) {
+                $sitemapLinks = HtmlAnalyzer::sitemapUrls($response->body, $guard);
+                $links = array_merge($links, $sitemapLinks);
+            }
+
             $findings = array_merge($findings, HtmlAnalyzer::analyze($response->body, $response->url, $startHost));
             $canonicals = HtmlAnalyzer::canonicalUrls($response->body, $response->url, $guard);
             $canonical = $canonicals[0] ?? '';
@@ -219,9 +222,24 @@ final class HttpCrawler
     private function seedFromSitemap(string $startUrl, HttpTransport $transport, SsrfGuard $guard, int $timeout, int $maxBytes, array &$queue, array &$seen, array &$errors): void
     {
         $origin = parse_url($startUrl, PHP_URL_SCHEME) . '://' . parse_url($startUrl, PHP_URL_HOST);
-        $candidates = [$origin . '/sitemap.xml', $origin . '/sitemap_index.xml', $origin . '/robots.txt'];
+        $sitemaps = [];
 
-        foreach ($candidates as $url) {
+        try {
+            $robots = $transport->get($guard->assertSafe($origin . '/robots.txt'), $timeout, $maxBytes);
+            if ($robots->status < 400 && preg_match_all('/^sitemap:\s*(\S+)/im', $robots->body, $matches)) {
+                foreach ($matches[1] as $sitemap) {
+                    $sitemaps[] = trim((string) $sitemap);
+                }
+            }
+        } catch (\Throwable) {
+            $sitemaps = [];
+        }
+
+        if ($sitemaps === []) {
+            $sitemaps[] = $origin . '/sitemap.xml';
+        }
+
+        foreach (array_unique($sitemaps) as $url) {
             try {
                 $safe = $guard->assertSafe($url);
                 $response = $transport->get($safe, $timeout, $maxBytes);
@@ -230,20 +248,6 @@ final class HttpCrawler
             }
 
             if ($response->status >= 400) {
-                continue;
-            }
-
-            if (str_ends_with($url, 'robots.txt')) {
-                if (preg_match_all('/^sitemap:\s*(\S+)/im', $response->body, $matches)) {
-                    foreach ($matches[1] as $sitemap) {
-                        try {
-                            $loc = $guard->assertSafe(trim((string) $sitemap));
-                            $queue[] = [UrlPolicy::normalize($loc), 0];
-                        } catch (\InvalidArgumentException) {
-                            $errors[] = 'Ignored off-site sitemap.';
-                        }
-                    }
-                }
                 continue;
             }
 
