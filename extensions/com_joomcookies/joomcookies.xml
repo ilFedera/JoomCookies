@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="component" method="upgrade">
+	<name>COM_JOOMCOOKIES</name>
+	<author>JoomCookies</author>
+	<creationDate>2026-11</creationDate>
+	<copyright>(C) 2026 JoomCookies</copyright>
+	<license>GNU General Public License version 2 or later; see LICENSE.txt</license>
+	<version>2.0.0</version>
+	<description>COM_JOOMCOOKIES_XML_DESCRIPTION</description>
+	<namespace path="src">JoomCookies\Component\Joomcookies</namespace>
+	<scriptfile>script.php</scriptfile>
+	<element>com_joomcookies</element>
+	<files folder="site">
+		<folder>src</folder>
+		<folder>tmpl</folder>
+	</files>
+	<administration>
+		<menu>COM_JOOMCOOKIES</menu>
+		<submenu>
+			<menu link="option=com_joomcookies&amp;view=dashboard" view="dashboard">COM_JOOMCOOKIES_NAV_DASHBOARD</menu>
+			<menu link="option=com_joomcookies&amp;view=scan" view="scan">COM_JOOMCOOKIES_NAV_SCAN</menu>
+			<menu link="option=com_joomcookies&amp;view=cookies" view="cookies">COM_JOOMCOOKIES_NAV_COOKIES</menu>
+			<menu link="option=com_joomcookies&amp;view=services" view="services">COM_JOOMCOOKIES_NAV_SERVICES</menu>
+			<menu link="option=com_joomcookies&amp;view=categories" view="categories">COM_JOOMCOOKIES_NAV_CATEGORIES</menu>
+			<menu link="option=com_joomcookies&amp;view=banner" view="banner">COM_JOOMCOOKIES_NAV_BANNER</menu>
+			<menu link="option=com_joomcookies&amp;view=texts" view="texts">COM_JOOMCOOKIES_NAV_TEXTS</menu>
+			<menu link="option=com_joomcookies&amp;view=youtube" view="youtube">COM_JOOMCOOKIES_NAV_YOUTUBE</menu>
+			<menu link="option=com_joomcookies&amp;view=diagnostic" view="diagnostic">COM_JOOMCOOKIES_NAV_DIAGNOSTIC</menu>
+		</submenu>
+		<files folder="admin">
+			<filename>access.xml</filename>
+			<folder>services</folder>
+			<folder>src</folder>
+			<folder>tmpl</folder>
+			<folder>sql</folder>
+			<folder>language</folder>
+		</files>
+		<languages folder="admin/language">
+			<language tag="en-GB">en-GB/com_joomcookies.ini</language>
+			<language tag="en-GB">en-GB/com_joomcookies.sys.ini</language>
+			<language tag="it-IT">it-IT/com_joomcookies.ini</language>
+			<language tag="it-IT">it-IT/com_joomcookies.sys.ini</language>
+		</languages>
+	</administration>
+	<install>
+		<sql>
+			<file driver="mysql" charset="utf8">sql/install.mysql.utf8.sql</file>
+			<file driver="mysqli" charset="utf8">sql/install.mysql.utf8.sql</file>
+			<file driver="mariadb" charset="utf8">sql/install.mysql.utf8.sql</file>
+		</sql>
+	</install>
+	<uninstall>
+		<sql>
+			<file driver="mysql" charset="utf8">sql/uninstall.mysql.utf8.sql</file>
+			<file driver="mysqli" charset="utf8">sql/uninstall.mysql.utf8.sql</file>
+			<file driver="mariadb" charset="utf8">sql/uninstall.mysql.utf8.sql</file>
+		</sql>
+	</uninstall>
+	<update>
+		<schemas>
+			<schemapath type="mysql">sql/updates/mysql</schemapath>
+			<schemapath type="mysqli">sql/updates/mysql</schemapath>
+			<schemapath type="mariadb">sql/updates/mysql</schemapath>
+		</schemas>
+	</update>
+</extension>

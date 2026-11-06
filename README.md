@@ -1,5 +1,7 @@
 # JoomCookies
 
+Versione **2.0.0**: package con componente amministrativo `com_joomcookies` e plugin di sistema `plg_system_joomcookies`.
+
 Estensione Joomla 5 e Joomla 6 per la gestione del consenso cookie e il **blocco preventivo** dei servizi non essenziali. Il pacchetto è autonomo: non usa CookieYes, CMP commerciali, CDN o servizi esterni.
 
 JoomCookies facilita gli adempimenti GDPR/ePrivacy. **Non dichiara una conformità legale automatica** per qualsiasi sito.
@@ -8,9 +10,9 @@ JoomCookies facilita gli adempimenti GDPR/ePrivacy. **Non dichiara una conformit
 
 Il file installabile è:
 
-`dist/pkg_joomcookies-1.0.0.zip`
+`dist/pkg_joomcookies-2.0.0.zip`
 
-Installa il plugin di sistema `System - JoomCookies`. Non modifica core, template, articoli, moduli o altre estensioni.
+Installa il componente **JoomCookies** e il plugin di sistema `System - JoomCookies`. Non modifica core, template, articoli, moduli o altre estensioni. In aggiornamento da V1 i parametri del plugin sono conservati e importati nel componente in modo idempotente.
 
 ## Requisiti
 
@@ -21,14 +23,15 @@ Installa il plugin di sistema `System - JoomCookies`. Non modifica core, templat
 ## Installazione
 
 1. In amministrazione Joomla aprire **Sistema → Installazione → Estensioni**.
-2. Caricare `dist/pkg_joomcookies-1.0.0.zip`.
-3. Verificare che il plugin **Sistema - JoomCookies** sia abilitato.
-4. Aprire **Sistema → Plugin**, cercare `JoomCookies` e configurare:
+2. Caricare `dist/pkg_joomcookies-2.0.0.zip`.
+3. Verificare che il plugin **Sistema - JoomCookies** sia abilitato e che il componente compaia in **Componenti → JoomCookies**.
+4. In **Componenti → JoomCookies** usare Panoramica, Scansione, Servizi, Banner e Testi. I parametri del plugin restano un fallback (origine configurazione: Auto / Componente / Plugin).
+5. In alternativa, **Sistema → Plugin**, cercare `JoomCookies` e configurare:
    - URL di Cookie Policy e Privacy Policy di **quel** sito
    - versione del consenso
    - testi, colori e posizione del banner
    - eventuali servizi extra oltre al catalogo incorporato
-5. Nel frontend, in una finestra anonima, verificare banner, rifiuto, accettazione e revoca.
+6. Nel frontend, in una finestra anonima, verificare banner, rifiuto, accettazione e revoca.
 
 Per aggiornare, reinstallare un ZIP successivo con `method="upgrade"`. Aumentare **Versione del consenso** se l'informativa o i servizi cambiano in modo sostanziale.
 
@@ -63,6 +66,7 @@ Accetta tutti, Rifiuta tutti e Personalizza hanno lo stesso peso. Nessuna catego
 
 - `CHANGELOG.md` — versione 1.0.0
 - `docs/TECHNICAL.md` — architettura e API
+- `docs/SCAN.md` — scansione HTTP, SSRF e contratto Playwright
 - `docs/PRIVACY-CONSENT.md` — conservazione del consenso e limiti probatori
 - `docs/MIGRATION.md` — uscita da CookieYes o altri CMP
 - `docs/TEST-CHECKLIST.md` — prove browser e rete

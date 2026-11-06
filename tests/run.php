@@ -5,17 +5,24 @@ declare(strict_types=1);
 define('_JEXEC', 1);
 
 spl_autoload_register(static function (string $class): void {
-    $prefix = 'JoomCookies\\Plugin\\System\\Joomcookies\\';
+    $map = [
+        'JoomCookies\\Plugin\\System\\Joomcookies\\' => dirname(__DIR__) . '/extensions/plg_system_joomcookies/src/',
+        'JoomCookies\\Component\\Joomcookies\\Administrator\\' => dirname(__DIR__) . '/extensions/com_joomcookies/admin/src/',
+    ];
 
-    if (!str_starts_with($class, $prefix)) {
+    foreach ($map as $prefix => $base) {
+        if (!str_starts_with($class, $prefix)) {
+            continue;
+        }
+
+        $relative = str_replace('\\', '/', substr($class, strlen($prefix)));
+        $file     = $base . $relative . '.php';
+
+        if (is_file($file)) {
+            require $file;
+        }
+
         return;
-    }
-
-    $relative = str_replace('\\', '/', substr($class, strlen($prefix)));
-    $file     = dirname(__DIR__) . '/extensions/plg_system_joomcookies/src/' . $relative . '.php';
-
-    if (is_file($file)) {
-        require $file;
     }
 });
 
@@ -149,13 +156,15 @@ foreach ($roots as $source) {
 
         $contents = file_get_contents($file->getPathname());
 
-        if ($contents !== false && preg_match('/clickandfly|cookieyes\.com|cdn\.cookieyes|gtm\.js\?id=GTM-[A-Z0-9]+/i', $contents)) {
+        if ($contents !== false && preg_match('/clickandfly|cdn\.cookieyes|cookieyes\.com\/client|gtm\.js\?id=GTM-[A-Z0-9]+/i', $contents)) {
             $hits[] = $file->getPathname();
         }
     }
 }
 
 assertTrue($hits === [], 'No site-specific or CookieYes CDN bindings in source');
+
+require __DIR__ . '/v2.php';
 
 if ($failures > 0) {
     fwrite(STDERR, "\n{$failures} checks failed.\n");

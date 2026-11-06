@@ -7,6 +7,7 @@
 
 \defined('_JEXEC') or die;
 
+use JoomCookies\Component\Joomcookies\Administrator\Service\Migration\PluginMigrator;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Installer\InstallerAdapter;
 use Joomla\CMS\Installer\InstallerScriptInterface;
@@ -60,6 +61,15 @@ class Pkg_joomcookiesInstallerScript implements InstallerScriptInterface
     {
         if (\in_array($type, ['install', 'update', 'discover_install'], true)) {
             $this->enablePlugin();
+            $this->enableComponent();
+
+            try {
+                if (class_exists(PluginMigrator::class)) {
+                    PluginMigrator::run(false);
+                }
+            } catch (\Throwable) {
+                // Retry from Components → JoomCookies → Overview.
+            }
         }
 
         return true;
@@ -74,6 +84,17 @@ class Pkg_joomcookiesInstallerScript implements InstallerScriptInterface
             ->where($db->quoteName('type') . ' = ' . $db->quote('plugin'))
             ->where($db->quoteName('folder') . ' = ' . $db->quote('system'))
             ->where($db->quoteName('element') . ' = ' . $db->quote('joomcookies'));
+        $db->setQuery($query)->execute();
+    }
+
+    private function enableComponent(): void
+    {
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+        $query = $db->getQuery(true)
+            ->update($db->quoteName('#__extensions'))
+            ->set($db->quoteName('enabled') . ' = 1')
+            ->where($db->quoteName('type') . ' = ' . $db->quote('component'))
+            ->where($db->quoteName('element') . ' = ' . $db->quote('com_joomcookies'));
         $db->setQuery($query)->execute();
     }
 }

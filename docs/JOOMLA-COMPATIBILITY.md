@@ -1,5 +1,8 @@
 # Compatibilità Joomla 5 e Joomla 6
 
+V2 aggiunge `com_joomcookies` con `MVCComponent`, `MVCFactory`, `checkToken()`, `authorise()` e SQL `#__` per MySQL/MariaDB. Non usa `Factory::getDbo()`.
+
+
 ## Scelte di API
 
 Il codice è scritto per le API moderne comuni a Joomla 5 e 6:

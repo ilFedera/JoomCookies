@@ -1,0 +1,2 @@
+-- Schema created by install.mysql.utf8.sql on first install of 2.0.0.
+-- This file exists so Joomla records schema version 2.0.0 on updates.

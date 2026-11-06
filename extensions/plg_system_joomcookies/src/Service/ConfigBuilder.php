@@ -23,8 +23,19 @@ final class ConfigBuilder
      */
     public static function fromParams(Registry $params, string $cookiePath): array
     {
+        return self::fromArray($params->toArray(), $cookiePath);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  list<array<string, mixed>>  $extraServices
+     * @return array<string, mixed>
+     */
+    public static function fromArray(array $data, string $cookiePath, array $extraServices = []): array
+    {
+        $params = new Registry($data);
         $version = self::version($params->get('consent_version', '1'));
-        $services = self::services($params->get('services', []));
+        $services = array_merge(self::services($params->get('services', [])), $extraServices);
         $registry = new ServiceRegistry($services);
 
         return [

@@ -191,7 +191,7 @@ final class ServiceRegistry
     /**
      * @return list<array<string, mixed>>
      */
-    private static function builtIn(): array
+    public static function builtIn(): array
     {
         $rows = [
             ['id' => 'gtm', 'name' => 'Google Tag Manager', 'category' => ConsentState::CATEGORY_STATISTICS, 'match_type' => 'domain', 'match_value' => 'googletagmanager.com', 'cookies' => '_ga,_gid,_gat,_gcl_au'],

@@ -141,7 +141,7 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
             return false;
         }
 
-        return (int) $this->params->get('enabled', 1) === 1;
+        return !empty($this->config()['enabled']);
     }
 
     /**
@@ -153,15 +153,36 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
             return $this->runtimeConfig;
         }
 
-        $this->runtimeConfig = ConfigBuilder::fromParams($this->params, Uri::root(true) ?: '/');
+        $source = (string) $this->params->get('config_source', 'auto');
+        $path   = Uri::root(true) ?: '/';
+        $bridge = ($source === 'plugin') ? null : ComponentConfigBridge::load();
+
+        if ($source === 'component' && $bridge === null) {
+            $this->runtimeConfig = ConfigBuilder::fromParams($this->params, $path);
+        } elseif ($bridge !== null && $source !== 'plugin') {
+            $this->runtimeConfig = ConfigBuilder::fromArray($bridge['settings'], $path, $bridge['services']);
+        } else {
+            $this->runtimeConfig = ConfigBuilder::fromParams($this->params, $path);
+        }
 
         return $this->runtimeConfig;
+    }
+
+    private function extraServices(): array
+    {
+        $source = (string) $this->params->get('config_source', 'auto');
+        $bridge = ($source === 'plugin') ? null : ComponentConfigBridge::load();
+
+        return $bridge['services'] ?? [];
     }
 
     private function guard(): HtmlGuard
     {
         $config   = $this->config();
-        $registry = new ServiceRegistry(ConfigBuilder::services($this->params->get('services', [])));
+        $registry = new ServiceRegistry(array_merge(
+            ConfigBuilder::services($this->params->get('services', [])),
+            $this->extraServices()
+        ));
 
         return new HtmlGuard($registry, ConfigBuilder::guardOptions($config), $this->currentConsent());
     }

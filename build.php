@@ -15,22 +15,26 @@ foreach ([$dist, $tmp, $package . '/packages'] as $dir) {
     }
 }
 
-$pluginZip  = $package . '/packages/plg_system_joomcookies.zip';
-$packageZip = $dist . '/pkg_joomcookies-1.0.0.zip';
+$pluginZip    = $package . '/packages/plg_system_joomcookies.zip';
+$componentZip = $package . '/packages/com_joomcookies.zip';
+$packageZip   = $dist . '/pkg_joomcookies-2.0.0.zip';
+$component    = $root . '/extensions/com_joomcookies';
 
-foreach ([$pluginZip, $packageZip] as $file) {
+foreach ([$pluginZip, $componentZip, $packageZip] as $file) {
     if (is_file($file)) {
         unlink($file);
     }
 }
 
 zipDirectory($plugin, $pluginZip);
+zipDirectory($component, $componentZip);
 zipFiles([
     $package . '/pkg_joomcookies.xml' => 'pkg_joomcookies.xml',
     $package . '/script.php' => 'script.php',
     $package . '/LICENSE.txt' => 'LICENSE.txt',
     $package . '/language/en-GB/pkg_joomcookies.sys.ini' => 'language/en-GB/pkg_joomcookies.sys.ini',
     $package . '/language/it-IT/pkg_joomcookies.sys.ini' => 'language/it-IT/pkg_joomcookies.sys.ini',
+    $componentZip => 'packages/com_joomcookies.zip',
     $pluginZip => 'packages/plg_system_joomcookies.zip',
 ], $packageZip);
 
