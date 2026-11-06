@@ -6,7 +6,11 @@ Eseguita dal componente, solo da amministratori con permesso `joomcookies.scan` 
 
 - Modalità **rapida**: limite di pagine configurabile (predefinito 50)
 - Modalità **completa**: nessun tetto arbitrario di pagine; restano limiti di sicurezza su dimensione risposta, timeout, lotti e ritardo tra richieste
-- Coda persistente `#__joomcookies_scan_queue`, elaborazione a lotti via AJAX
+- Coda persistente `#__joomcookies_scan_queue`
+- `scan.start` crea il job e il primo lotto; `scan.batch` continua da solo (fetch in loop; se il JS non parte, un form nascosto ripubblica il lotto dopo 2s)
+- Pausa / Riprendi / Annulla sono POST autonomi
+- Il limite «secondi» è **per richiesta PHP** (3–25), non la durata totale della scansione completa
+- Scansione rapida: il tetto pagine si applica alle URL **analizzate** (`done`), non a quelle solo in coda
 - Pausa, ripresa e annullamento; i risultati già salvati restano
 - Fonti URL: sitemap XML, sitemap index, menu Joomla pubblici, link interni, URL canonici
 - Solo GET, solo host autorizzato del sito

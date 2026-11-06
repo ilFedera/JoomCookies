@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.2.6 — 2026-11-06
+
+- Motore di scansione: i lotti successivi partono da soli (`scan.batch` in loop, watchdog HTML se il fetch non è disponibile). Non serve più premere Avvia.
+- Pausa, Riprendi e Annulla sono form POST (funzionano anche senza JavaScript) e hanno feedback sullo stato reale.
+- Limite della scansione rapida applicato sul conteggio live delle pagine `done`; coda più grande del tetto ammessa ma non analizzata oltre il cap.
+- Tempo attivo persistito; lotti `running` bloccati recuperati; JSON con `Cache-Control` / `X-LiteSpeed-Cache-Control: no-cache`.
+- Corretto l’import di `HttpCrawler` in `ScanController`.
+
+## 2.2.5 — 2026-11-06
+
+- Scanner: `scan.start` esegue il primo lotto (non si limita a creare il job) e una scansione `running` riprende invece di restare ferma a zero.
+- I lotti successivi restano su `scan.batch` (AJAX); errori visibili all’amministratore; dopo un reload la scansione in corso continua.
+- Il tetto di 25 secondi resta per ogni richiesta PHP, non per l’intera scansione completa.
+
+## 2.2.4 — 2026-11-06
+
+- Blocco preventivo di Google Analytics 4 e del loader YOOtheme `theme-analytics/app/analytics.min.js`, senza copiare il Measurement ID e senza modificare YOOtheme.
+- Prima del consenso Statistiche non parte `gtag.js` né `page_view`; dopo l’accettazione si esegue lo script originale una sola volta (coda `$load` YOOtheme adattata se già consumata).
+- Consent Mode v2: default `denied` cache-safe in head e `update` dopo la scelta; la rete di sicurezza non sostituisce il blocco preventivo.
+- Revoca Statistiche: stop degli eventi successivi, cancellazione `_ga` / `_ga_*` / `_gid` visibili al sito; reCAPTCHA e Maps non sono bloccati.
+
 ## 2.2.3 — 2026-11-06
 
 - Dopo «Accetta tutti» o l'autorizzazione di Contenuti esterni i segnaposto YouTube diventano iframe, anche al ricaricamento e con HTML in cache.

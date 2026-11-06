@@ -22,6 +22,7 @@ final class ServiceCatalog
         return [
             ['id' => 'gtm', 'name' => 'Google Tag Manager', 'provider' => 'Google', 'category' => 'statistics', 'match_type' => 'domain', 'match_value' => 'googletagmanager.com', 'cookies' => ['_ga', '_gid', '_gat', '_gcl_au']],
             ['id' => 'ga', 'name' => 'Google Analytics', 'provider' => 'Google', 'category' => 'statistics', 'match_type' => 'domain', 'match_value' => 'google-analytics.com', 'cookies' => ['_ga', '_gid', '_gat']],
+            ['id' => 'yootheme-analytics', 'name' => 'YOOtheme Google Analytics', 'provider' => 'YOOtheme', 'category' => 'statistics', 'match_type' => 'url_contains', 'match_value' => 'theme-analytics/app/analytics', 'cookies' => ['_ga', '_gid', '_gat']],
             ['id' => 'hotjar', 'name' => 'Hotjar', 'provider' => 'Hotjar', 'category' => 'statistics', 'match_type' => 'domain', 'match_value' => 'hotjar.com', 'cookies' => ['_hjSessionUser', '_hjSession']],
             ['id' => 'matomo', 'name' => 'Matomo', 'provider' => 'Matomo', 'category' => 'statistics', 'match_type' => 'domain', 'match_value' => 'matomo.cloud', 'cookies' => ['_pk_id', '_pk_ses']],
             ['id' => 'facebook', 'name' => 'Meta Pixel', 'provider' => 'Meta', 'category' => 'marketing', 'match_type' => 'domain', 'match_value' => 'facebook.net', 'cookies' => ['_fbp', '_fbc']],

@@ -1,4 +1,4 @@
-# Documentazione tecnica JoomCookies 2.2.3
+# Documentazione tecnica JoomCookies 2.2.6
 
 ## Architettura
 
@@ -42,13 +42,15 @@ Se `v` non coincide con la configurazione corrente, il banner viene riproposto. 
 3. iframe YouTube/Vimeo/Maps e altri match → segnaposto locale
 4. shortcode `{joomcookies youtube=...}` → segnaposto o player
 
-Dopo il consenso il JavaScript locale clona gli script in elementi eseguibili una sola volta (`data-jck-loaded` + chiave anti-duplicato). La revoca di una categoria già accettata ricarica la pagina e tenta di cancellare i cookie di prima parte elencati nel servizio. I cookie HttpOnly o di terzi non sono cancellabili dal browser del sito.
+Dopo il consenso il JavaScript locale clona gli script in elementi eseguibili una sola volta (`data-jck-loaded` + chiave anti-duplicato). La revoca di una categoria già accettata ricarica la pagina e tenta di cancellare i cookie di prima parte elencati nel servizio (per Analytics anche `_ga_*`). I cookie HttpOnly o di terzi non sono cancellabili dal browser del sito.
 
-Asset Joomla in `/media/system/`, `/media/vendor/` e `/media/templates/` non vengono toccati. Gli script del plugin hanno `data-jck-ignore` implicito tramite path/id.
+Asset Joomla in `/media/system/` e `/media/vendor/` non vengono toccati. `/media/templates/` **non** è in whitelist globale, così `theme-analytics` di YOOtheme può essere bloccato; gli altri JS di template restano eseguibili se non sono nel catalogo. Gli script del plugin hanno `data-jck-ignore` implicito tramite path/id.
+
+Google Analytics: vedi `docs/ANALYTICS.md` (blocco preventivo YOOtheme/gtag, Consent Mode v2 come rete di sicurezza, nessun Measurement ID da copiare).
 
 ## Registro servizi
 
-Il catalogo incorporato copre, tra gli altri: Google Tag Manager, Google Analytics, gtag inline, Hotjar, Meta Pixel, DoubleClick, Ads, AdSense, YouTube, Vimeo, Google Maps, Instagram, TikTok.
+Il catalogo incorporato copre, tra gli altri: Google Tag Manager, Google Analytics, gtag.js, loader YOOtheme `theme-analytics`, gtag inline, Hotjar, Meta Pixel, DoubleClick, Ads, AdSense, YouTube, Vimeo, Google Maps, Instagram, TikTok. Non include reCAPTCHA.
 
 L'amministratore può aggiungere regole:
 

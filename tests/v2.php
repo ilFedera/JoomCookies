@@ -99,6 +99,8 @@ assertTrue($reversed['position'] === 'box-left', 'Rollback restores snapshot');
 
 $hit = ServiceCatalog::identify('https://www.googletagmanager.com/gtag/js?id=G-TEST');
 assertTrue($hit !== null && $hit['id'] === 'gtm' && $hit['category'] === 'statistics', 'Catalogue identifies GTM');
+$yooScan = ServiceCatalog::identify('/templates/yootheme/vendor/yootheme/theme-analytics/app/analytics.min.js');
+assertTrue($yooScan !== null && $yooScan['id'] === 'yootheme-analytics', 'Scan catalogue identifies YOOtheme analytics');
 $unknown = ServiceCatalog::identify('https://unknown-tracker.example/x.js');
 assertTrue($unknown === null, 'Unknown host is not auto-classified');
 
@@ -151,15 +153,20 @@ assertTrue(str_contains($js, 'isOwnYoutubeNode'), 'Observer ignores JoomCookies 
 assertTrue(!str_contains($js, "document.querySelectorAll('[data-jck-youtube]').forEach(refreshYoutubeActions)"), 'Enhance does not refresh every YouTube node on each mutation');
 assertTrue(str_contains($js, 'JoomCookies: frontend init skipped'), 'Start errors are caught without breaking the page');
 assertTrue(str_contains($js, 'renderYoutubePlaceholder(node, videoId)'), 'Revoked YouTube players restore placeholders');
+assertTrue(str_contains($js, 'adaptYoothemeLoadQueue'), 'YOOtheme $load queue is adapted after statistics consent');
+assertTrue(str_contains($js, 'updateGoogleConsentMode'), 'Consent Mode is updated from the visitor choice');
+assertTrue(str_contains($js, 'isGoogleAnalyticsNetwork'), 'Dynamic gtag injection is recognized without blocking reCAPTCHA');
+assertTrue(str_contains($js, "name.indexOf('_ga_') === 0"), 'GA4 _ga_* cookies are removed on revoke');
 $pluginSrc = file_get_contents($pluginClassFile) ?: '';
 assertTrue(str_contains($pluginSrc, 'ConsentState::deniedOptional()'), 'Public HTML is generated without reading the consent cookie');
+assertTrue(str_contains($pluginSrc, 'GoogleConsentMode::injectAfterHeadOpen'), 'Consent Mode default is injected after HTML rewrite');
 assertTrue(str_contains($pluginSrc, 'FrontendAssets::withVersion'), 'CSS/JS URLs are versioned after install');
 assertTrue(str_contains($pluginSrc, 'FrontendAssets::protectionAttributes'), 'Injected tags use LiteSpeed protection attributes');
 $assetClass = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/src/Service/FrontendAssets.php') ?: '';
 assertTrue(str_contains($assetClass, 'data-no-delay') && str_contains($assetClass, 'data-no-combine'), 'LiteSpeed delay/combine are opted out on JoomCookies assets');
 $assetJson = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/joomla.asset.json') ?: '';
-assertTrue(str_contains($assetJson, '"2.2.3"') && str_contains($assetJson, 'data-no-delay'), 'WebAsset registry versions assets and skips LiteSpeed delay');
-assertTrue(\JoomCookies\Plugin\System\Joomcookies\Service\FrontendAssets::version() === '2.2.3', 'FrontendAssets version is 2.2.3');
+assertTrue(str_contains($assetJson, '"2.2.6"') && str_contains($assetJson, 'data-no-delay'), 'WebAsset registry versions assets and skips LiteSpeed delay');
+assertTrue(\JoomCookies\Plugin\System\Joomcookies\Service\FrontendAssets::version() === '2.2.6', 'FrontendAssets version is 2.2.6');
 
 $driver = new UnavailableBrowserScanDriver();
 assertTrue($driver->isAvailable() === false, 'Browser driver is not available');

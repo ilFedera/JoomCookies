@@ -339,11 +339,12 @@ final class HtmlGuard
         $src = strtolower($this->attribute($attributes, 'src'));
         $id  = strtolower($this->attribute($attributes, 'id'));
 
-        if (\in_array($id, ['joomcookies-config', 'joomcookies-runtime', 'joomcookies-css'], true)) {
+        if (\in_array($id, ['joomcookies-config', 'joomcookies-runtime', 'joomcookies-css', GoogleConsentMode::SCRIPT_ID], true)) {
             return true;
         }
 
-        if ($src !== '' && (str_contains($src, 'plg_system_joomcookies') || str_contains($src, 'joomcookies.js') || str_contains($src, 'joomcookies.css') || str_contains($src, 'media/system') || str_contains($src, 'media/vendor') || str_contains($src, 'media/templates'))) {
+        // media/templates is not skipped: YOOtheme analytics may live there.
+        if ($src !== '' && (str_contains($src, 'plg_system_joomcookies') || str_contains($src, 'joomcookies.js') || str_contains($src, 'joomcookies.css') || str_contains($src, 'media/system') || str_contains($src, 'media/vendor'))) {
             return true;
         }
 

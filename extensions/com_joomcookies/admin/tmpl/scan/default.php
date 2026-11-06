@@ -4,13 +4,18 @@
 
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
+use Joomla\CMS\Uri\Uri;
 
 $page = $this->page;
 $stats = $page['stats'] ?? [];
 $progress = $page['progress'] ?? [];
+$status = (string) ($progress['status'] ?? ($page['current']['status'] ?? ''));
+$scanId = (int) ($page['current']['id'] ?? 0);
+$action = Route::_('index.php?option=com_joomcookies');
 include dirname(__DIR__) . '/_nav.php';
 ?>
-<form action="<?php echo Route::_('index.php?option=com_joomcookies'); ?>" method="post" class="mb-4" id="jck-scan-run">
+<div id="jck-scan-error" class="alert alert-danger" hidden></div>
+<form action="<?php echo $action; ?>" method="post" class="mb-4" id="jck-scan-run" data-error-http="<?php echo $this->escape(Text::_('COM_JOOMCOOKIES_SCAN_AJAX_ERROR')); ?>">
 	<div class="mb-3">
 		<label class="form-label" for="start_url"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_START_URL'); ?></label>
 		<div class="form-text"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_START_URL_DESC'); ?></div>
@@ -26,13 +31,35 @@ include dirname(__DIR__) . '/_nav.php';
 	</div>
 	<p class="text-muted"><?php echo Text::sprintf('COM_JOOMCOOKIES_SCAN_LIMITS', (int) $page['limits']['max_pages'], (int) $page['limits']['max_depth'], (int) $page['limits']['max_seconds']); ?></p>
 	<input type="hidden" name="task" value="scan.start">
-	<input type="hidden" name="scan_id" value="<?php echo (int) ($page['current']['id'] ?? 0); ?>">
+	<input type="hidden" name="scan_id" value="<?php echo $scanId; ?>">
 	<div class="d-flex flex-wrap gap-2 mb-3">
-		<button class="btn btn-primary" type="submit" id="jck-scan-start"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_START'); ?></button>
-		<button class="btn btn-secondary" type="button" id="jck-scan-pause"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_PAUSE'); ?></button>
-		<button class="btn btn-secondary" type="button" id="jck-scan-resume"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_RESUME'); ?></button>
-		<button class="btn btn-danger" type="button" id="jck-scan-cancel"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_CANCEL'); ?></button>
+		<button class="btn btn-primary" type="submit" id="jck-scan-start"<?php echo $status === 'running' ? ' disabled' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_START'); ?></button>
 	</div>
+	<?php echo $this->token; ?>
+</form>
+<div class="d-flex flex-wrap gap-2 mb-4">
+	<form action="<?php echo $action; ?>" method="post" id="jck-scan-pause-form">
+		<input type="hidden" name="task" value="scan.pause">
+		<input type="hidden" name="scan_id" value="<?php echo $scanId; ?>">
+		<?php echo $this->token; ?>
+		<button class="btn btn-secondary" type="submit" id="jck-scan-pause"<?php echo $status !== 'running' ? ' disabled' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_PAUSE'); ?></button>
+	</form>
+	<form action="<?php echo $action; ?>" method="post" id="jck-scan-resume-form">
+		<input type="hidden" name="task" value="scan.resume">
+		<input type="hidden" name="scan_id" value="<?php echo $scanId; ?>">
+		<?php echo $this->token; ?>
+		<button class="btn btn-secondary" type="submit" id="jck-scan-resume"<?php echo $status !== 'paused' ? ' disabled' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_RESUME'); ?></button>
+	</form>
+	<form action="<?php echo $action; ?>" method="post" id="jck-scan-cancel-form">
+		<input type="hidden" name="task" value="scan.cancel">
+		<input type="hidden" name="scan_id" value="<?php echo $scanId; ?>">
+		<?php echo $this->token; ?>
+		<button class="btn btn-danger" type="submit" id="jck-scan-cancel"<?php echo !in_array($status, ['running', 'paused'], true) ? ' disabled' : ''; ?>><?php echo Text::_('COM_JOOMCOOKIES_SCAN_CANCEL'); ?></button>
+	</form>
+</div>
+<form action="<?php echo $action; ?>" method="post" id="jck-scan-continue" hidden>
+	<input type="hidden" name="task" value="scan.batch">
+	<input type="hidden" name="scan_id" value="<?php echo $scanId; ?>">
 	<?php echo $this->token; ?>
 </form>
 <div class="mb-4">
@@ -45,7 +72,8 @@ include dirname(__DIR__) . '/_nav.php';
 		<div class="col-md-2"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_PAGES'); ?>: <span id="jck-scan-pages"><?php echo (int) ($progress['pages'] ?? $stats['pages'] ?? 0); ?></span></div>
 		<div class="col-md-2"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_PENDING'); ?>: <span id="jck-scan-pending"><?php echo (int) ($progress['pending'] ?? 0); ?></span></div>
 		<div class="col-md-2"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_ERRORS'); ?>: <span id="jck-scan-errors"><?php echo (int) ($progress['errors'] ?? 0); ?></span></div>
-		<div class="col-md-2"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_ELAPSED'); ?>: <span id="jck-scan-elapsed"><?php echo (int) ($progress['elapsed'] ?? 0); ?>s</span></div>
+		<div class="col-md-2"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_ELAPSED'); ?>: <span id="jck-scan-elapsed"><?php echo (int) ($progress['elapsed_active'] ?? $progress['elapsed'] ?? 0); ?>s</span></div>
+		<div class="col-md-2"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_TOTAL'); ?>: <span id="jck-scan-findings"><?php echo (int) ($progress['findings'] ?? $stats['total'] ?? 0); ?></span></div>
 	</div>
 </div>
 <form action="<?php echo Route::_('index.php?option=com_joomcookies'); ?>" method="post" class="mb-4">
@@ -64,6 +92,7 @@ include dirname(__DIR__) . '/_nav.php';
 		<div class="col-md-4">
 			<label class="form-label" for="scan_max_seconds"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_MAX_SECONDS'); ?></label>
 			<input class="form-control" id="scan_max_seconds" type="number" name="jform[scan_max_seconds]" value="<?php echo (int) $page['limits']['max_seconds']; ?>" min="3" max="25">
+			<div class="form-text"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_MAX_SECONDS_DESC'); ?></div>
 		</div>
 	</div>
 	<button class="btn btn-secondary mt-2" type="submit"><?php echo Text::_('COM_JOOMCOOKIES_SCAN_SAVE_LIMITS'); ?></button>
@@ -135,5 +164,33 @@ include dirname(__DIR__) . '/_nav.php';
 	</tbody>
 </table>
 <?php
+$scanJs = rtrim(Uri::root(true), '/') . '/media/com_joomcookies/js/scan.js?v=2.2.6';
 $wa = $this->getDocument()->getWebAssetManager();
-$wa->registerAndUseScript('com_joomcookies.scan', 'com_joomcookies/js/scan.js', [], ['defer' => true]);
+try {
+	$wa->getRegistry()->addExtensionRegistryFile('com_joomcookies');
+	$wa->useScript('com_joomcookies.scan');
+} catch (\Throwable) {
+	$wa->registerAndUseScript(
+		'com_joomcookies.scan',
+		'com_joomcookies/js/scan.js',
+		['version' => 'auto', 'relative' => true],
+		['defer' => true]
+	);
+}
+?>
+<script src="<?php echo $this->escape($scanJs); ?>" id="com-joomcookies-scan-js"></script>
+<?php if ($status === 'running') : ?>
+<script>
+(function () {
+  window.setTimeout(function () {
+    if (window.JoomCookiesScan && window.JoomCookiesScan.isLooping && window.JoomCookiesScan.isLooping()) {
+      return;
+    }
+    var form = document.getElementById('jck-scan-continue');
+    if (form) {
+      form.submit();
+    }
+  }, 2000);
+})();
+</script>
+<?php endif; ?>

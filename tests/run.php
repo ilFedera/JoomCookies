@@ -27,6 +27,7 @@ spl_autoload_register(static function (string $class): void {
 });
 
 use JoomCookies\Plugin\System\Joomcookies\Service\ConsentState;
+use JoomCookies\Plugin\System\Joomcookies\Service\GoogleConsentMode;
 use JoomCookies\Plugin\System\Joomcookies\Service\HtmlGuard;
 use JoomCookies\Plugin\System\Joomcookies\Service\ServiceRegistry;
 use JoomCookies\Plugin\System\Joomcookies\Service\YoutubeEmbed;
@@ -145,6 +146,38 @@ assertTrue(!preg_match('#<iframe[^>]+src="https://www\.youtube#', $allowed), 'Li
 assertTrue(str_contains($allowed, 'youtube-nocookie.com/embed/dQw4w9WgXcQ'), 'Placeholder payload still uses the nocookie host');
 assertTrue($allowed === $blocked, 'Consent cookie does not change public HTML, so one cache copy is safe');
 
+$yooSrc = '/templates/yootheme/vendor/yootheme/theme-analytics/app/analytics.min.js';
+$yooMedia = '/media/templates/site/yootheme/vendor/yootheme/theme-analytics/app/analytics.min.js';
+$yooHit = $registry->matchScript($yooSrc, '');
+assertTrue($yooHit !== null && $yooHit['id'] === 'yootheme-analytics', 'YOOtheme analytics URL is classified as statistics');
+assertTrue($registry->matchScript($yooMedia, '')['id'] === 'yootheme-analytics', 'YOOtheme analytics under media/templates is classified');
+assertTrue($registry->matchScript('https://www.google.com/recaptcha/api.js', '') === null, 'reCAPTCHA is not in the analytics catalogue');
+assertTrue($registry->matchScript('/media/templates/site/cassiopeia/js/template.min.js', '') === null, 'Ordinary template JS is not classified');
+
+$yooPage = <<<HTML
+<html><head>
+<script src="{$yooSrc}"></script>
+<script src="{$yooMedia}"></script>
+<script src="/media/templates/site/cassiopeia/js/template.min.js"></script>
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<script>(function(){o("https://www.googletagmanager.com/gtag/js?id="+t)})();</script>
+</head><body></body></html>
+HTML;
+$yooBlocked = $guard->process($yooPage);
+assertTrue(str_contains($yooBlocked, 'data-jck-src="' . $yooSrc . '"') && str_contains($yooBlocked, 'data-jck-service="yootheme-analytics"'), 'YOOtheme analytics.min.js is prior-blocked');
+assertTrue(str_contains($yooBlocked, 'data-jck-src="' . $yooMedia . '"'), 'theme-analytics in media/templates is prior-blocked');
+assertTrue(preg_match('#<script src="/media/templates/site/cassiopeia/js/template.min.js"></script>#', $yooBlocked) === 1, 'Unrelated template JS stays executable');
+assertTrue(str_contains($yooBlocked, 'https://www.google.com/recaptcha/api.js') && !str_contains($yooBlocked, 'data-jck-src="https://www.google.com/recaptcha/api.js"'), 'reCAPTCHA is not blocked');
+assertTrue(str_contains($yooBlocked, 'data-jck-category="statistics"') && str_contains($yooBlocked, 'googletagmanager.com/gtag/js'), 'Inline gtag/js loader is blocked');
+assertTrue(!preg_match('#<script src="' . preg_quote($yooSrc, '#') . '"></script>#', $yooBlocked), 'YOOtheme analytics src is not left executable');
+
+$gcmHtml = GoogleConsentMode::injectAfterHeadOpen($yooBlocked);
+assertTrue(str_contains($gcmHtml, 'id="joomcookies-gcm"') && str_contains($gcmHtml, "analytics_storage:'denied'"), 'Consent Mode default is denied and cache-safe');
+assertTrue(!str_contains($gcmHtml, "analytics_storage:'granted'"), 'Cached HTML never grants analytics storage');
+assertTrue(GoogleConsentMode::injectAfterHeadOpen($gcmHtml) === $gcmHtml, 'Consent Mode snippet is injected once');
+$gcmProcessed = $guard->process($gcmHtml);
+assertTrue(str_contains($gcmProcessed, 'id="joomcookies-gcm"') && str_contains($gcmProcessed, "gtag('consent','default'"), 'Consent Mode stub is not rewritten by HtmlGuard');
+
 $xss = (new HtmlGuard($registry, [
     'youtube_nocookie' => true,
     'youtube_thumbnails' => 'local',
@@ -179,6 +212,7 @@ foreach ($roots as $source) {
 assertTrue($hits === [], 'No site-specific or CookieYes CDN bindings in source');
 
 require __DIR__ . '/v2.php';
+require __DIR__ . '/scan.php';
 require __DIR__ . '/lang.php';
 
 if ($failures > 0) {

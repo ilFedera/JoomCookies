@@ -196,8 +196,11 @@ final class ServiceRegistry
         $rows = [
             ['id' => 'gtm', 'name' => 'Google Tag Manager', 'category' => ConsentState::CATEGORY_STATISTICS, 'match_type' => 'domain', 'match_value' => 'googletagmanager.com', 'cookies' => '_ga,_gid,_gat,_gcl_au'],
             ['id' => 'ga', 'name' => 'Google Analytics', 'category' => ConsentState::CATEGORY_STATISTICS, 'match_type' => 'domain', 'match_value' => 'google-analytics.com', 'cookies' => '_ga,_gid,_gat'],
+            ['id' => 'gtag-js', 'name' => 'Google gtag.js', 'category' => ConsentState::CATEGORY_STATISTICS, 'match_type' => 'url_contains', 'match_value' => 'googletagmanager.com/gtag/js', 'cookies' => '_ga,_gid,_gat'],
+            ['id' => 'yootheme-analytics', 'name' => 'YOOtheme Google Analytics', 'category' => ConsentState::CATEGORY_STATISTICS, 'match_type' => 'url_contains', 'match_value' => 'theme-analytics/app/analytics', 'cookies' => '_ga,_gid,_gat'],
             ['id' => 'gtag-inline', 'name' => 'Google gtag inline', 'category' => ConsentState::CATEGORY_STATISTICS, 'match_type' => 'content_contains', 'match_value' => 'gtag(', 'cookies' => '_ga,_gid'],
             ['id' => 'datalayer-gtm', 'name' => 'Google dataLayer GTM', 'category' => ConsentState::CATEGORY_STATISTICS, 'match_type' => 'content_contains', 'match_value' => 'googletagmanager.com/gtm.js', 'cookies' => '_ga'],
+            ['id' => 'datalayer-gtag', 'name' => 'Google dataLayer gtag', 'category' => ConsentState::CATEGORY_STATISTICS, 'match_type' => 'content_contains', 'match_value' => 'googletagmanager.com/gtag/js', 'cookies' => '_ga,_gid'],
             ['id' => 'hotjar', 'name' => 'Hotjar', 'category' => ConsentState::CATEGORY_STATISTICS, 'match_type' => 'domain', 'match_value' => 'hotjar.com', 'cookies' => '_hjSessionUser,_hjSession'],
             ['id' => 'facebook', 'name' => 'Meta Pixel', 'category' => ConsentState::CATEGORY_MARKETING, 'match_type' => 'domain', 'match_value' => 'facebook.net', 'cookies' => '_fbp,_fbc'],
             ['id' => 'facebook-connect', 'name' => 'Meta Connect', 'category' => ConsentState::CATEGORY_MARKETING, 'match_type' => 'domain', 'match_value' => 'connect.facebook.net', 'cookies' => '_fbp'],

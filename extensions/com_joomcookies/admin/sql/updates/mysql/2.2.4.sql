@@ -1,0 +1,1 @@
+-- 2.2.4: Google Analytics / YOOtheme consent; no schema change.

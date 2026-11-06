@@ -40,6 +40,21 @@ final class ScanLimits
         return $cap === 0 || $processed < $cap;
     }
 
+    public static function percent(int $done, int $discovered, int $cap, string $status): int
+    {
+        if ($status === 'complete') {
+            return 100;
+        }
+
+        if ($cap > 0) {
+            return min(99, (int) round(100 * min($done, $cap) / $cap));
+        }
+
+        $denominator = max($discovered, $done);
+
+        return $denominator > 0 ? min(99, (int) round(100 * $done / $denominator)) : 0;
+    }
+
     /**
      * @param  array<string, mixed>  $options
      */

@@ -32,7 +32,7 @@ final class ScanRunner
         $active = $this->activeScan();
 
         if ($active !== null) {
-            return $this->statusPayload((int) $active['id'], 'A scan is already running.');
+            return $this->processBatch((int) $active['id']);
         }
 
         $safeStart = $this->guard->assertSafe($startUrl);
@@ -57,7 +57,7 @@ final class ScanRunner
 
         $this->writeSummary($scanId, $this->progress($scanId, $options, 'running'));
 
-        return $this->statusPayload($scanId);
+        return $this->processBatch($scanId);
     }
 
     /**
@@ -77,6 +77,20 @@ final class ScanRunner
 
         $options = json_decode((string) $scan['config'], true);
         $options = \is_array($options) ? $options : [];
+        $summary = $this->summary($scan);
+        $lockUntil = (int) ($summary['batch_lock_until'] ?? 0);
+
+        if ($lockUntil > time()) {
+            $payload = $this->statusPayload($scanId);
+            $payload['busy'] = true;
+            $payload['retry_ms'] = max(1000, ($lockUntil - time()) * 1000);
+
+            return $payload;
+        }
+
+        $this->reclaimStuck($scanId);
+        $this->lockBatch($scanId, $summary, ScanLimits::maxSeconds($options));
+
         $timeout = ScanLimits::timeout($options);
         $maxBytes = ScanLimits::maxBytes($options);
         $maxDepth = ScanLimits::depth($options);
@@ -84,65 +98,78 @@ final class ScanRunner
         $batchSize = ScanLimits::batchSize($options);
         $maxSeconds = ScanLimits::maxSeconds($options);
         $started = microtime(true);
-        $processed = (int) ($this->summary($scan)['pages'] ?? 0);
+        $processed = $this->queueCount($scanId, 'done');
         $handled = 0;
+        $active = (int) ($summary['elapsed_active'] ?? 0);
 
-        while ($handled < $batchSize && (microtime(true) - $started) < $maxSeconds) {
-            if (!ScanLimits::allowsMorePages($options, $processed)) {
-                $this->finish($scanId, 'complete', $options);
-                return $this->statusPayload($scanId);
-            }
+        try {
+            while ($handled < $batchSize && (microtime(true) - $started) < $maxSeconds) {
+                $processed = $this->queueCount($scanId, 'done');
 
-            $item = $this->nextPending($scanId);
+                if (!ScanLimits::allowsMorePages($options, $processed)) {
+                    $this->finish($scanId, 'complete', $options, $active + (int) round(microtime(true) - $started));
 
-            if ($item === null) {
-                $this->finish($scanId, 'complete', $options);
-                return $this->statusPayload($scanId);
-            }
+                    return $this->statusPayload($scanId);
+                }
 
-            $this->markQueue($item['id'], 'running');
+                $item = $this->nextPending($scanId);
 
-            try {
-                $result = $this->crawler->fetchPage(
-                    (string) $item['url'],
-                    (int) $item['depth'],
-                    $maxDepth,
-                    $this->transport,
-                    $this->guard,
-                    $timeout,
-                    $maxBytes
-                );
-            } catch (\Throwable) {
-                $this->markQueue($item['id'], 'error', 'Skip URL.');
+                if ($item === null) {
+                    $this->finish($scanId, 'complete', $options, $active + (int) round(microtime(true) - $started));
+
+                    return $this->statusPayload($scanId);
+                }
+
+                $this->markQueue($item['id'], 'running');
+
+                try {
+                    $result = $this->crawler->fetchPage(
+                        (string) $item['url'],
+                        (int) $item['depth'],
+                        $maxDepth,
+                        $this->transport,
+                        $this->guard,
+                        $timeout,
+                        $maxBytes
+                    );
+                } catch (\Throwable) {
+                    $this->markQueue($item['id'], 'error', 'Skip URL.');
+                    $handled++;
+                    continue;
+                }
+
+                foreach ($result['findings'] as $finding) {
+                    $this->storeFinding($scanId, $finding);
+                }
+
+                foreach ($result['links'] as $link) {
+                    $this->enqueue($scanId, $link, (int) $item['depth'] + 1);
+                }
+
+                $this->markQueue($item['id'], 'done');
+                $processed++;
                 $handled++;
-                continue;
-            }
 
-            foreach ($result['findings'] as $finding) {
-                $this->storeFinding($scanId, $finding);
+                if ($delayMs > 0) {
+                    usleep($delayMs * 1000);
+                }
             }
-
-            foreach ($result['links'] as $link) {
-                $this->enqueue($scanId, $link, (int) $item['depth'] + 1);
-            }
-
-            $this->markQueue($item['id'], 'done');
-            $processed++;
-            $handled++;
-
-            if ($delayMs > 0) {
-                usleep($delayMs * 1000);
-            }
+        } finally {
+            $active += (int) max(0, round(microtime(true) - $started));
         }
 
+        $processed = $this->queueCount($scanId, 'done');
         $status = ScanLimits::allowsMorePages($options, $processed) && $this->pendingCount($scanId) > 0
             ? 'running'
             : 'complete';
 
         if ($status === 'complete') {
-            $this->finish($scanId, 'complete', $options);
+            $this->finish($scanId, 'complete', $options, $active);
         } else {
-            $this->writeSummary($scanId, $this->progress($scanId, $options, 'running'));
+            $progress = $this->progress($scanId, $options, 'running');
+            $progress['elapsed_active'] = $active;
+            $progress['batch_lock_until'] = 0;
+            $this->writeSummary($scanId, $progress);
         }
 
         return $this->statusPayload($scanId);
@@ -239,25 +266,28 @@ final class ScanRunner
         $errors = $this->queueCount($scanId, 'error');
         $queued = $this->queueCount($scanId, '');
         $scan = $this->loadScan($scanId);
-        $started = strtotime((string) ($scan['started_at'] ?? '')) ?: time();
+        $existing = $this->summary(\is_array($scan) ? $scan : []);
+        $startedAt = \is_array($scan) ? (string) ($scan['started_at'] ?? '') : '';
+        $started = strtotime($startedAt) ?: time();
         $elapsed = max(0, time() - $started);
         $discovered = max($queued, $done + $pending + $errors);
         $cap = ScanLimits::pageCap($options);
-        $denominator = $cap > 0 ? min($cap, max($discovered, $done)) : max($discovered, $done + $pending);
-        $percent = $denominator > 0 ? (int) round(100 * $done / $denominator) : 0;
-        $estimated = $pending > 0 && ($cap === 0 || $discovered < $cap);
+        $percent = ScanLimits::percent($done, $discovered, $cap, $status);
+        $estimated = $pending > 0 && $cap === 0 && $status === 'running';
 
         return [
             'status'          => $status,
             'scan_mode'       => ScanLimits::mode($options),
+            'page_cap'        => $cap,
             'pages'           => $done,
             'pending'         => $pending,
             'errors'          => $errors,
             'discovered'      => $discovered,
             'elapsed'         => $elapsed,
-            'percent'         => min(99, $percent),
-            'percent_final'   => $status === 'complete' ? 100 : min(99, $percent),
-            'estimated'       => $estimated && $status === 'running',
+            'elapsed_active'  => (int) ($existing['elapsed_active'] ?? 0),
+            'percent'         => $percent,
+            'percent_final'   => $status === 'complete' ? 100 : $percent,
+            'estimated'       => $estimated,
             'incomplete'      => \in_array($status, ['cancelled', 'paused', 'running'], true),
             'findings'        => $this->findingCount($scanId),
         ];
@@ -268,7 +298,14 @@ final class ScanRunner
      */
     private function seedSitemaps(int $scanId, string $startUrl, array $options): void
     {
-        $origin = parse_url($startUrl, PHP_URL_SCHEME) . '://' . parse_url($startUrl, PHP_URL_HOST);
+        $scheme = parse_url($startUrl, PHP_URL_SCHEME);
+        $host = parse_url($startUrl, PHP_URL_HOST);
+
+        if (!\is_string($scheme) || $scheme === '' || !\is_string($host) || $host === '') {
+            return;
+        }
+
+        $origin = $scheme . '://' . $host;
         $candidates = [$origin . '/sitemap.xml', $origin . '/robots.txt'];
         $timeout = ScanLimits::timeout($options);
         $maxBytes = ScanLimits::maxBytes($options);
@@ -360,8 +397,14 @@ final class ScanRunner
 
         try {
             $this->db->setQuery($query)->execute();
-        } catch (\Throwable) {
-            // Duplicate URL for this scan.
+        } catch (\Throwable $exception) {
+            $message = strtolower($exception->getMessage());
+
+            if (str_contains($message, 'duplicate') || str_contains($message, '1062')) {
+                return;
+            }
+
+            throw $exception;
         }
     }
 
@@ -479,14 +522,39 @@ final class ScanRunner
     /**
      * @param  array<string, mixed>  $options
      */
-    private function finish(int $scanId, string $status, array $options): void
+    private function finish(int $scanId, string $status, array $options, int $elapsedActive = 0): void
     {
         $summary = $this->progress($scanId, $options, $status);
         $summary['percent'] = 100;
         $summary['percent_final'] = 100;
         $summary['estimated'] = false;
         $summary['incomplete'] = $status !== 'complete';
+        $summary['elapsed_active'] = $elapsedActive > 0 ? $elapsedActive : (int) ($summary['elapsed_active'] ?? 0);
+        $summary['batch_lock_until'] = 0;
         $this->writeSummary($scanId, $summary, true);
+    }
+
+    /**
+     * @param  array<string, mixed>  $summary
+     */
+    private function lockBatch(int $scanId, array $summary, int $maxSeconds): void
+    {
+        $summary['batch_lock_until'] = time() + $maxSeconds + 5;
+        $query = $this->db->getQuery(true)
+            ->update($this->db->quoteName('#__joomcookies_scans'))
+            ->set($this->db->quoteName('summary') . ' = ' . $this->db->quote(json_encode($summary, JSON_UNESCAPED_SLASHES) ?: '{}'))
+            ->where($this->db->quoteName('id') . ' = ' . $scanId);
+        $this->db->setQuery($query)->execute();
+    }
+
+    private function reclaimStuck(int $scanId): void
+    {
+        $query = $this->db->getQuery(true)
+            ->update($this->db->quoteName('#__joomcookies_scan_queue'))
+            ->set($this->db->quoteName('status') . ' = ' . $this->db->quote('pending'))
+            ->where($this->db->quoteName('scan_id') . ' = ' . $scanId)
+            ->where($this->db->quoteName('status') . ' = ' . $this->db->quote('running'));
+        $this->db->setQuery($query)->execute();
     }
 
     /**

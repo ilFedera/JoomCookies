@@ -8,6 +8,8 @@ Ambiente richiesto: Joomla 5 e, se disponibile, Joomla 6. Finestra anonima, DevT
 - [ ] Rifiuta tutti è visibile quanto Accetta tutti.
 - [ ] Nessuna categoria facoltativa è già selezionata.
 - [ ] Nessuna richiesta a `youtube.com`, `youtube-nocookie.com`, `googletagmanager.com`, `google-analytics.com`, `connect.facebook.net` (salvo risorse non gestite dal registro).
+- [ ] Nessuna richiesta a `gtag/js` né `google-analytics.com/g/collect` / `page_view` (YOOtheme `theme-analytics` incluso).
+- [ ] reCAPTCHA, se presente, continua a caricare.
 - [ ] I video YouTube mostrano il segnaposto locale, non un iframe.
 - [ ] Navigazione da tastiera: Tab cicla nei pulsanti, Escape non nasconde il banner se manca ancora una scelta.
 
@@ -22,6 +24,7 @@ Ambiente richiesto: Joomla 5 e, se disponibile, Joomla 6. Finestra anonima, DevT
 ## Dopo Accetta tutti
 
 - [ ] Partono gli script registrati (una sola volta ciascuno).
+- [ ] Con Statistiche: un solo `gtag/js` e configurazione Analytics (niente `page_view` duplicati). Il Measurement ID resta quello di YOOtheme/template.
 - [ ] I player YouTube **non** partono da soli: compare "Carica il video". Dopo il clic il player usa `youtube-nocookie.com` se l'opzione è attiva.
 - [ ] Lightbox/griglia: i segnaposto restano 16:9 e leggibili; il video parte solo dopo il clic esplicito.
 

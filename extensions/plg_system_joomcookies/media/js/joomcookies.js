@@ -170,6 +170,103 @@
     return names;
   }
 
+  function analyticsCookieNames() {
+    var found = [];
+    var raw = document.cookie ? document.cookie.split(';') : [];
+    for (var i = 0; i < raw.length; i += 1) {
+      var name = raw[i].split('=')[0].trim();
+      if (!name) {
+        continue;
+      }
+      if (name === '_ga' || name === '_gid' || name === '_gat' || name.indexOf('_ga_') === 0 || name.indexOf('_gcl_') === 0) {
+        if (found.indexOf(name) === -1) {
+          found.push(name);
+        }
+      }
+    }
+    return found;
+  }
+
+  function isGoogleAnalyticsNetwork(src) {
+    var value = String(src || '').toLowerCase();
+    if (!value) {
+      return false;
+    }
+    if (value.indexOf('recaptcha') !== -1 || value.indexOf('maps.googleapis') !== -1 || value.indexOf('google.com/maps') !== -1) {
+      return false;
+    }
+    return value.indexOf('theme-analytics/app/analytics') !== -1
+      || value.indexOf('googletagmanager.com/gtag/js') !== -1
+      || value.indexOf('googletagmanager.com/gtm.js') !== -1
+      || value.indexOf('google-analytics.com') !== -1;
+  }
+
+  function pushGtag() {
+    window.dataLayer = window.dataLayer || [];
+    if (typeof window.gtag !== 'function') {
+      window.gtag = function () {
+        window.dataLayer.push(arguments);
+      };
+    }
+    window.gtag.apply(null, arguments);
+  }
+
+  function updateGoogleConsentMode(categories) {
+    try {
+      pushGtag('consent', 'update', {
+        analytics_storage: categories.statistics ? 'granted' : 'denied',
+        ad_storage: categories.marketing ? 'granted' : 'denied',
+        ad_user_data: categories.marketing ? 'granted' : 'denied',
+        ad_personalization: categories.marketing ? 'granted' : 'denied'
+      });
+    } catch (e) {
+      log('JoomCookies: consent mode update skipped', e);
+    }
+  }
+
+  function adaptYoothemeLoadQueue() {
+    if (typeof window.$load !== 'function' || (window.$load && window.$load.__jckAdapted)) {
+      return;
+    }
+    var run = window.$load;
+    var proxy = [];
+    proxy.__jckAdapted = true;
+    proxy.push = function (fn) {
+      try {
+        run(fn);
+      } catch (err) {
+        log('JoomCookies: YOOtheme $load callback skipped', err);
+      }
+      return 1;
+    };
+    window.$load = proxy;
+  }
+
+  function stripUnauthorizedAnalytics(root) {
+    if (!root || currentCategories().statistics) {
+      return;
+    }
+    var scripts = [];
+    if (root.tagName === 'SCRIPT') {
+      scripts = [root];
+    } else if (root.querySelectorAll) {
+      scripts = root.querySelectorAll('script[src]');
+    }
+    for (var i = 0; i < scripts.length; i += 1) {
+      var el = scripts[i];
+      if (el.getAttribute('data-jck-managed') === '1' && (el.getAttribute('type') || '') === 'text/plain') {
+        continue;
+      }
+      var src = el.getAttribute('src') || el.src || '';
+      if (!isGoogleAnalyticsNetwork(src)) {
+        continue;
+      }
+      if (el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+    }
+  }
+
   function trapFocus(container, event) {
     if (event.key !== 'Tab') {
       return;
@@ -298,6 +395,9 @@
   }
 
   function activateScripts(categories) {
+    if (categories.statistics) {
+      adaptYoothemeLoadQueue();
+    }
     document.querySelectorAll('script[type="text/plain"][data-jck-managed="1"]').forEach(function (el) {
       var category = el.getAttribute('data-jck-category');
       if (!categories[category]) {
@@ -540,6 +640,7 @@
           if (node.nodeType !== 1 || isOwnYoutubeNode(node)) {
             continue;
           }
+          stripUnauthorizedAnalytics(node);
           if ((node.classList && node.classList.contains('youtube-player')) || (node.querySelector && node.querySelector('.youtube-player'))) {
             pending.push(node);
           }
@@ -639,9 +740,14 @@
     });
 
     document.dispatchEvent(new CustomEvent('joomcookies:change', { detail: { categories: categories, version: config.version } }));
+    updateGoogleConsentMode(categories);
 
     if (downgrade) {
-      deleteCookies(optionalCookieNames());
+      var cookieNames = optionalCookieNames();
+      if (previous.c.statistics && !categories.statistics) {
+        cookieNames = cookieNames.concat(analyticsCookieNames());
+      }
+      deleteCookies(cookieNames);
       stopManagedPlayers();
       if (config.reloadOnRevoke !== false) {
         location.reload();
@@ -801,11 +907,13 @@
       var state = readState();
       if (!state) {
         fillToggles(categoriesFrom(null));
+        updateGoogleConsentMode(categoriesFrom(null));
         openDialog('banner');
         document.dispatchEvent(new CustomEvent('joomcookies:ready', { detail: { categories: categoriesFrom(null), version: config.version } }));
         return;
       }
 
+      updateGoogleConsentMode(state.c);
       activateScripts(state.c);
       enhanceYoutubePlayers(document);
       activateEmbeds(state.c);

@@ -10,6 +10,7 @@ namespace JoomCookies\Component\Joomcookies\Administrator\Controller;
 \defined('_JEXEC') or die;
 
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\HttpCrawler;
+use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanAjax;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanLimits;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\ScanRunner;
 use JoomCookies\Component\Joomcookies\Administrator\Service\Scan\SsrfGuard;
@@ -66,8 +67,12 @@ class ScanController extends BaseController
 
         try {
             $payload = $runner->start($safeStart, $options, (int) $this->app->getIdentity()->id);
-        } catch (\Throwable) {
+        } catch (\InvalidArgumentException) {
             $this->fail(Text::_('COM_JOOMCOOKIES_SCAN_URL_DENIED'));
+
+            return;
+        } catch (\Throwable) {
+            $this->fail(Text::_('COM_JOOMCOOKIES_SCAN_FAILED'));
 
             return;
         }
@@ -79,28 +84,33 @@ class ScanController extends BaseController
     {
         $this->authorize();
         $scanId = $this->scanId();
-        $this->respond($this->runner()->processBatch($scanId), $scanId);
+
+        if ($scanId < 1) {
+            $this->fail(Text::_('COM_JOOMCOOKIES_SCAN_FAILED'));
+
+            return;
+        }
+
+        try {
+            $this->respond($this->runner()->processBatch($scanId), $scanId);
+        } catch (\Throwable) {
+            $this->fail(Text::_('COM_JOOMCOOKIES_SCAN_FAILED'));
+        }
     }
 
     public function pause(): void
     {
-        $this->authorize();
-        $scanId = $this->scanId();
-        $this->respond($this->runner()->pause($scanId), $scanId);
+        $this->runNamed('pause');
     }
 
     public function resume(): void
     {
-        $this->authorize();
-        $scanId = $this->scanId();
-        $this->respond($this->runner()->resume($scanId), $scanId);
+        $this->runNamed('resume');
     }
 
     public function cancel(): void
     {
-        $this->authorize();
-        $scanId = $this->scanId();
-        $this->respond($this->runner()->cancel($scanId), $scanId);
+        $this->runNamed('cancel');
     }
 
     public function status(): void
@@ -136,6 +146,24 @@ class ScanController extends BaseController
         }
     }
 
+    private function runNamed(string $method): void
+    {
+        $this->authorize();
+        $scanId = $this->scanId();
+
+        if ($scanId < 1) {
+            $this->fail(Text::_('COM_JOOMCOOKIES_SCAN_FAILED'));
+
+            return;
+        }
+
+        try {
+            $this->respond($this->runner()->{$method}($scanId), $scanId);
+        } catch (\Throwable) {
+            $this->fail(Text::_('COM_JOOMCOOKIES_SCAN_FAILED'));
+        }
+    }
+
     private function runner(): ScanRunner
     {
         $host = (string) parse_url(Uri::root(), PHP_URL_HOST);
@@ -154,11 +182,28 @@ class ScanController extends BaseController
      */
     private function respond(array $payload, int $scanId): void
     {
+        $this->noCache();
+
         if ($this->wantsJson()) {
             $this->app->setHeader('Content-Type', 'application/json; charset=utf-8');
+            $this->app->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            $this->app->setHeader('Pragma', 'no-cache');
+            $this->app->setHeader('X-LiteSpeed-Cache-Control', 'no-cache');
             $this->app->sendHeaders();
             echo json_encode($payload, JSON_UNESCAPED_SLASHES);
             $this->app->close();
+        }
+
+        $status = (string) ($payload['status'] ?? '');
+        $pages = (int) (($payload['progress']['pages'] ?? 0));
+        $findings = (int) (($payload['progress']['findings'] ?? 0));
+
+        if ($status === 'complete') {
+            $this->setMessage(Text::sprintf('COM_JOOMCOOKIES_SCAN_DONE', $pages, $findings));
+        } elseif (!empty($payload['error'])) {
+            $this->setMessage((string) $payload['error'], 'error');
+        } else {
+            $this->setMessage(Text::_('COM_JOOMCOOKIES_SCAN_RUNNING'));
         }
 
         $this->setRedirect(Route::_('index.php?option=com_joomcookies&view=scan&id=' . $scanId, false));
@@ -166,8 +211,12 @@ class ScanController extends BaseController
 
     private function fail(string $message): void
     {
+        $this->noCache();
+
         if ($this->wantsJson()) {
             $this->app->setHeader('Content-Type', 'application/json; charset=utf-8');
+            $this->app->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            $this->app->setHeader('X-LiteSpeed-Cache-Control', 'no-cache');
             $this->app->sendHeaders();
             echo json_encode(['ok' => false, 'error' => $message], JSON_UNESCAPED_SLASHES);
             $this->app->close();
@@ -179,7 +228,14 @@ class ScanController extends BaseController
 
     private function wantsJson(): bool
     {
-        return $this->input->getCmd('format') === 'json'
-            || strtolower((string) $this->input->server->getString('HTTP_X_REQUESTED_WITH', '')) === 'xmlhttprequest';
+        return ScanAjax::wantsJson();
+    }
+
+    private function noCache(): void
+    {
+        $this->app->allowCache(false);
+        $this->app->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        $this->app->setHeader('Pragma', 'no-cache');
+        $this->app->setHeader('X-LiteSpeed-Cache-Control', 'no-cache');
     }
 }

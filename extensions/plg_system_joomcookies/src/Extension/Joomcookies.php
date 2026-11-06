@@ -14,6 +14,7 @@ use JoomCookies\Plugin\System\Joomcookies\Service\ComponentConfigBridge;
 use JoomCookies\Plugin\System\Joomcookies\Service\ConfigBuilder;
 use JoomCookies\Plugin\System\Joomcookies\Service\ConsentState;
 use JoomCookies\Plugin\System\Joomcookies\Service\FrontendAssets;
+use JoomCookies\Plugin\System\Joomcookies\Service\GoogleConsentMode;
 use JoomCookies\Plugin\System\Joomcookies\Service\HtmlGuard;
 use JoomCookies\Plugin\System\Joomcookies\Service\ServiceRegistry;
 use Joomla\CMS\Document\HtmlDocument;
@@ -94,6 +95,7 @@ final class Joomcookies extends CMSPlugin implements SubscriberInterface
             $config = $this->config();
             $guard  = $this->guard();
             $body   = $guard->process($body);
+            $body   = GoogleConsentMode::injectAfterHeadOpen($body);
             $json   = json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
 
             if ($json === false) {

@@ -1,0 +1,1 @@
+-- 2.2.6: scan batch loop, page cap, LiteSpeed no-cache; no schema change.

@@ -1,0 +1,1 @@
+-- 2.2.5: restore queued scan batches; no schema change.

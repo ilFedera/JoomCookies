@@ -14,6 +14,15 @@ class HtmlView extends BaseHtmlView
     {
         $this->page = $this->getModel()->getScanPage();
         $this->prepare('COM_JOOMCOOKIES_NAV_SCAN');
+
+        try {
+            $wa = $this->getDocument()->getWebAssetManager();
+            $wa->getRegistry()->addExtensionRegistryFile('com_joomcookies');
+            $wa->useScript('com_joomcookies.scan');
+        } catch (\Throwable) {
+            // Template still registers a fallback script tag.
+        }
+
         parent::display($tpl);
     }
 }
