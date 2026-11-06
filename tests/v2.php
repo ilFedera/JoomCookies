@@ -142,7 +142,9 @@ assertTrue(!str_contains($crawlerSrc, 'min(50') && !str_contains($scanCtrlSrc, '
 $js = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/js/joomcookies.js') ?: '';
 assertTrue(str_contains($js, 'enhanceYoutubePlayers'), 'Frontend enhances youtube-player containers');
 assertTrue(str_contains($js, 'observeDynamicContent'), 'MutationObserver watches dynamically added videos');
-assertTrue(str_contains($js, 'isYoutubeEmbed(node) && !onlyNode'), 'YouTube is not auto-injected on general accept');
+assertTrue(str_contains($js, 'loadYoutubeIfAllowed'), 'YouTube iframes load when embeds are allowed');
+assertTrue(str_contains($js, 'withoutAutoplay'), 'YouTube iframes do not autoplay');
+assertTrue(!str_contains($js, 'isYoutubeEmbed(node) && !onlyNode'), 'Accept-all no longer leaves YouTube placeholders in place');
 assertTrue(str_contains($js, 'youtubeBusy'), 'YouTube enhance has a reentrancy guard');
 assertTrue(str_contains($js, 'takeRecords()'), 'Observer queue is drained while enhancing');
 assertTrue(str_contains($js, 'isOwnYoutubeNode'), 'Observer ignores JoomCookies own DOM mutations');
@@ -156,8 +158,8 @@ assertTrue(str_contains($pluginSrc, 'FrontendAssets::protectionAttributes'), 'In
 $assetClass = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/src/Service/FrontendAssets.php') ?: '';
 assertTrue(str_contains($assetClass, 'data-no-delay') && str_contains($assetClass, 'data-no-combine'), 'LiteSpeed delay/combine are opted out on JoomCookies assets');
 $assetJson = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/joomla.asset.json') ?: '';
-assertTrue(str_contains($assetJson, '"2.2.2"') && str_contains($assetJson, 'data-no-delay'), 'WebAsset registry versions assets and skips LiteSpeed delay');
-assertTrue(\JoomCookies\Plugin\System\Joomcookies\Service\FrontendAssets::version() === '2.2.2', 'FrontendAssets version is 2.2.2');
+assertTrue(str_contains($assetJson, '"2.2.3"') && str_contains($assetJson, 'data-no-delay'), 'WebAsset registry versions assets and skips LiteSpeed delay');
+assertTrue(\JoomCookies\Plugin\System\Joomcookies\Service\FrontendAssets::version() === '2.2.3', 'FrontendAssets version is 2.2.3');
 
 $driver = new UnavailableBrowserScanDriver();
 assertTrue($driver->isAvailable() === false, 'Browser driver is not available');

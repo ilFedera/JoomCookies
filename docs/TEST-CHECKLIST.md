@@ -41,7 +41,7 @@ Ambiente richiesto: Joomla 5 e, se disponibile, Joomla 6. Finestra anonima, DevT
 
 - [ ] Cache fredda, nessun consenso: HTML con `type="text/plain"` e segnaposto YouTube, nessuna richiesta a YouTube/GTM.
 - [ ] Cache calda, nessun consenso: stesso HTML, stesso blocco.
-- [ ] Consenso salvato e reload da cache: JS attiva gli script; i placeholder YouTube mostrano "Carica il video" anche in griglia.
+- [ ] Consenso salvato e reload da cache: JS attiva gli script; i video YouTube diventano iframe senza autoplay, anche in griglia.
 - [ ] Revoca: i player si interrompono e non partono nuove richieste YouTube.
 - [ ] `joomcookies.js?v=` corrisponde alla versione installata; LiteSpeed non combina/ritarda quel file.
 - [ ] Nessuna vary cache sul cookie `joomcookies_consent`.

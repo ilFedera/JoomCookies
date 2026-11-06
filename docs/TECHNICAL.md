@@ -1,4 +1,4 @@
-# Documentazione tecnica JoomCookies 2.2.2
+# Documentazione tecnica JoomCookies 2.2.3
 
 ## Architettura
 
@@ -69,7 +69,7 @@ Sintassi unica:
 
 Prima del consenso: nessun iframe, nessuna richiesta a `youtube.com` / `youtube-nocookie.com`. Miniatura da `i.ytimg.com` solo se l'opzione è abilitata esplicitamente.
 
-Dopo il consenso o al click su "Carica video": iframe verso `youtube-nocookie.com` (predefinito). Il click sul singolo video non salva il consenso di categoria; abilita solo quell'embed.
+Dopo «Accetta tutti» o l'autorizzazione di Contenuti esterni: i segnaposto diventano iframe verso `youtube-nocookie.com` (predefinito) **senza autoplay**. Il HTML pubblico resta bloccato (cache-safe); lo sblocco avviene in JavaScript.
 
 API pubblica:
 

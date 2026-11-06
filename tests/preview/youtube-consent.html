@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>JoomCookies YouTube consent</title>
+  <link rel="stylesheet" href="../../extensions/plg_system_joomcookies/media/css/joomcookies.css">
+</head>
+<body>
+  <div class="youtube-player" data-id="dQw4w9WgXcQ"></div>
+  <div class="jck-embed jck-embed--youtube" data-jck-embed="1" data-jck-youtube="dQw4w9WgXcQ" data-jck-category="embeds" data-jck-service="youtube" data-jck-iframe="{&quot;src&quot;:&quot;https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ&quot;,&quot;title&quot;:&quot;Video&quot;,&quot;attrs&quot;:{},&quot;category&quot;:&quot;embeds&quot;,&quot;service&quot;:&quot;youtube&quot;,&quot;videoId&quot;:&quot;dQw4w9WgXcQ&quot;}" role="group">
+    <div class="jck-embed__surface"><div class="jck-embed__panel"><p class="jck-embed__title">Video YouTube bloccato</p><div class="jck-embed__actions"><button type="button" data-jck-open-prefs="1">Gestisci preferenze</button></div></div></div>
+  </div>
+  <p id="result">running</p>
+  <script type="application/json" id="joomcookies-config">{"enabled":true,"version":"1","position":"bottom","theme":{"background":"#111827","text":"#F9FAFB","accent":"#2563EB","buttonText":"#FFFFFF","muted":"#D1D5DB"},"texts":{"title":"Usiamo i cookie","message":"Test","accept":"Accetta tutti","reject":"Rifiuta tutti","customize":"Personalizza","save":"Salva","close":"Chiudi","reopen":"Preferenze","prefsTitle":"Preferenze","youtubeBlocked":"Video YouTube bloccato","youtubeLoad":"Carica il video","youtubeHelp":"Attiva i contenuti esterni per visualizzarlo.","youtubePrefs":"Gestisci preferenze"},"links":{},"categories":{"necessary":{"id":"necessary","label":"Necessari","required":true},"embeds":{"id":"embeds","label":"Contenuti esterni","required":false}},"services":[],"cookie":{"name":"joomcookies_consent","days":180,"path":"/","sameSite":"Lax"},"youtube":{"nocookie":true,"thumbnails":"local"},"ui":{"reopen":true,"diagnostic":true},"reloadOnRevoke":false}</script>
+  <div id="joomcookies-root" class="jck-root" data-jck-root="1">
+    <div class="jck-overlay" data-jck-overlay="1" hidden></div>
+    <section class="jck-banner" data-jck-banner="1" hidden role="dialog">
+      <button type="button" data-jck-action="reject">Rifiuta tutti</button>
+      <button type="button" data-jck-action="accept">Accetta tutti</button>
+    </section>
+    <section class="jck-panel" data-jck-panel="1" hidden role="dialog"></section>
+  </div>
+  <script>
+    document.cookie = 'joomcookies_consent=' + encodeURIComponent(JSON.stringify({
+      v: '1', t: 1, c: { necessary: true, statistics: false, marketing: false, embeds: true }
+    })) + '; Path=/; SameSite=Lax';
+  </script>
+  <script src="../../extensions/plg_system_joomcookies/media/js/joomcookies.js?v=2.2.3" id="joomcookies-runtime"></script>
+  <script>
+    setTimeout(function () {
+      var iframes = document.querySelectorAll('iframe[data-jck-managed="1"]');
+      var autoplay = 0;
+      iframes.forEach(function (frame) {
+        if (/autoplay=1/i.test(frame.src)) {
+          autoplay += 1;
+        }
+      });
+      document.getElementById('result').textContent = JSON.stringify({
+        iframes: iframes.length,
+        autoplay: autoplay,
+        placeholders: document.querySelectorAll('[data-jck-embed="1"]:not([data-jck-loaded="1"])').length,
+        embeds: window.JoomCookies && window.JoomCookies.hasConsent('embeds')
+      });
+    }, 300);
+  </script>
+</body>
+</html>

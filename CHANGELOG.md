@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.3 — 2026-11-06
+
+- Dopo «Accetta tutti» o l'autorizzazione di Contenuti esterni i segnaposto YouTube diventano iframe, anche al ricaricamento e con HTML in cache.
+- Gli iframe usano `autoplay=0`; in revoca i player vengono rimossi e i segnaposto ripristinati.
+- Diagnostica opzionale: versione asset, stato consenso, iframe bloccati/sbloccati (nessun dato personale).
+
 ## 2.2.2 — 2026-11-06
 
 - HTML pubblico sempre in forma bloccata: il consenso si applica nel browser, compatibile con LiteSpeed Cache senza vary sul cookie.

@@ -329,9 +329,21 @@
     });
   }
 
+  function withoutAutoplay(src) {
+    src = String(src || '');
+    try {
+      var url = new URL(src, document.baseURI || location.href);
+      url.searchParams.delete('autoplay');
+      url.searchParams.set('autoplay', '0');
+      return url.toString();
+    } catch (e) {
+      return src.replace(/([?&])autoplay=1/gi, '$1autoplay=0');
+    }
+  }
+
   function iframeFromPayload(payload) {
     var iframe = document.createElement('iframe');
-    iframe.src = payload.src;
+    iframe.src = withoutAutoplay(payload.src);
     iframe.setAttribute('data-jck-managed', '1');
     iframe.setAttribute('title', payload.title || '');
     iframe.setAttribute('allowfullscreen', 'allowfullscreen');
@@ -492,6 +504,11 @@
         host.setAttribute('data-jck-yt', '1');
         renderYoutubePlaceholder(host, videoId);
       });
+      if (currentCategories().embeds) {
+        hosts.forEach(function (host) {
+          loadYoutubeIfAllowed(host);
+        });
+      }
     } catch (e) {
       log('JoomCookies: YouTube enhance skipped', e);
     } finally {
@@ -541,6 +558,16 @@
     }
   }
 
+  function loadYoutubeIfAllowed(node) {
+    if (!node || !currentCategories().embeds) {
+      return;
+    }
+    var target = node.hasAttribute('data-jck-embed') ? node : node.querySelector('[data-jck-embed="1"]');
+    if (target && isYoutubeEmbed(target)) {
+      loadEmbed(target);
+    }
+  }
+
   function loadEmbed(node) {
     if (!node) {
       return;
@@ -569,10 +596,6 @@
     nodes.forEach(function (node) {
       var category = node.getAttribute('data-jck-category') || 'embeds';
       if (!categories[category]) {
-        return;
-      }
-      if (isYoutubeEmbed(node) && !onlyNode) {
-        refreshYoutubeActions(node);
         return;
       }
       loadEmbed(node);
@@ -627,8 +650,9 @@
     }
 
     activateScripts(categories);
-    activateEmbeds(categories);
     enhanceYoutubePlayers(document);
+    activateEmbeds(categories);
+    debugSnapshot('consent-applied');
     closeDialogs(false);
 
     if (options.reload) {
@@ -722,6 +746,25 @@
     return state ? state.c : categoriesFrom(null);
   }
 
+  function assetVersion() {
+    var node = document.getElementById('joomcookies-runtime') || document.querySelector('script[src*="joomcookies.js"]');
+    var src = node && node.getAttribute('src') ? node.getAttribute('src') : '';
+    var match = src.match(/[?&]v=([^&]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  function debugSnapshot(label) {
+    if (!config || !config.ui || !config.ui.diagnostic) {
+      return;
+    }
+    log('JoomCookies:', label, {
+      asset: assetVersion(),
+      consent: currentCategories(),
+      blocked: document.querySelectorAll('[data-jck-embed="1"]:not([data-jck-loaded="1"])').length,
+      unlocked: document.querySelectorAll('iframe[data-jck-managed="1"]').length
+    });
+  }
+
   function openPreferences() {
     if (!root || !config) {
       start();
@@ -764,11 +807,11 @@
       }
 
       activateScripts(state.c);
-      activateEmbeds(state.c);
       enhanceYoutubePlayers(document);
+      activateEmbeds(state.c);
       closeDialogs(false);
       document.dispatchEvent(new CustomEvent('joomcookies:ready', { detail: { categories: state.c, version: config.version } }));
-      log('JoomCookies: restored consent', state);
+      debugSnapshot('consent-restored');
     } catch (e) {
       if (window.console && console.error) {
         console.error('JoomCookies: frontend init skipped', e);
