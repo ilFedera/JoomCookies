@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<updates>
+	<update>
+		<name>JoomCookies</name>
+		<description>JoomCookies package</description>
+		<element>pkg_joomcookies</element>
+		<type>package</type>
+		<version>1.0.0</version>
+		<client>site</client>
+		<downloads>
+			<downloadurl type="full" format="zip">https://example.org/dist/pkg_joomcookies-1.0.0.zip</downloadurl>
+		</downloads>
+		<targetplatform name="joomla" version="((5\.(0|1|2|3|4|5|6|7|8|9))|(6\.(0|1|2|3|4|5|6|7|8|9)))" />
+		<php_minimum>8.1.0</php_minimum>
+	</update>
+</updates>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="package" method="upgrade">
+	<name>PKG_JOOMCOOKIES</name>
+	<author>JoomCookies</author>
+	<creationDate>2026-11</creationDate>
+	<packagename>joomcookies</packagename>
+	<version>1.0.0</version>
+	<copyright>(C) 2026 JoomCookies</copyright>
+	<license>GNU General Public License version 2 or later; see LICENSE.txt</license>
+	<description>PKG_JOOMCOOKIES_XML_DESCRIPTION</description>
+	<scriptfile>script.php</scriptfile>
+	<blockChildUninstall>true</blockChildUninstall>
+	<files folder="packages">
+		<file type="plugin" id="joomcookies" group="system">plg_system_joomcookies.zip</file>
+	</files>
+	<languages folder="language">
+		<language tag="en-GB">en-GB/pkg_joomcookies.sys.ini</language>
+		<language tag="it-IT">it-IT/pkg_joomcookies.sys.ini</language>
+	</languages>
+</extension>

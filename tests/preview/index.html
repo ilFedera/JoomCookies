@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JoomCookies preview</title>
+  <link rel="stylesheet" href="../../extensions/plg_system_joomcookies/media/css/joomcookies.css">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 1.5rem; }
+    #joomcookies-root { --jck-bg:#111827; --jck-text:#F9FAFB; --jck-accent:#2563EB; --jck-btn-text:#FFFFFF; --jck-muted:#D1D5DB; }
+  </style>
+</head>
+<body>
+  <h1>Pagina di prova</h1>
+  <p>Simula l'output frontend di JoomCookies senza un CMS Joomla.</p>
+  <div id="video-slot">
+    <div class="jck-embed jck-embed--youtube" data-jck-embed="1" data-jck-youtube="dQw4w9WgXcQ" data-jck-category="embeds" data-jck-service="youtube" data-jck-iframe="{&quot;src&quot;:&quot;https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ&quot;,&quot;title&quot;:&quot;Demo&quot;,&quot;attrs&quot;:{},&quot;category&quot;:&quot;embeds&quot;,&quot;service&quot;:&quot;youtube&quot;,&quot;videoId&quot;:&quot;dQw4w9WgXcQ&quot;}" style="--jck-ratio:16 / 9" role="group" aria-label="Video YouTube">
+      <div class="jck-embed__surface">
+        <div class="jck-embed__panel">
+          <p class="jck-embed__title">Video YouTube</p>
+          <p class="jck-embed__text">Il player non viene caricato finché non consenti i contenuti esterni o usi questo pulsante.</p>
+          <button type="button" class="jck-embed__button" data-jck-load-embed="1">Carica video</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p><button type="button" data-jck-open-prefs="1">Apri preferenze dal contenuto</button></p>
+  <script src="https://www.googletagmanager.com/gtag/js?id=G-TEST" type="text/plain" data-jck-managed="1" data-jck-category="statistics" data-jck-service="gtm" data-jck-src="https://www.googletagmanager.com/gtag/js?id=G-TEST"></script>
+  <script type="application/json" id="joomcookies-config">{"enabled":true,"version":"1","position":"bottom","theme":{"background":"#111827","text":"#F9FAFB","accent":"#2563EB","buttonText":"#FFFFFF","muted":"#D1D5DB"},"texts":{"title":"Usiamo i cookie","message":"Statistiche e contenuti restano bloccati finché non scegli.","accept":"Accetta tutti","reject":"Rifiuta tutti","customize":"Personalizza","save":"Salva preferenze","close":"Chiudi","reopen":"Preferenze cookie","prefsTitle":"Preferenze cookie","cookieLink":"Cookie policy","privacyLink":"Privacy policy","embedBlocked":"Contenuto esterno bloccato","embedLoad":"Carica contenuto","youtubeBlocked":"Video YouTube","youtubeLoad":"Carica video","youtubeHelp":"Aiuto","necessaryAlways":"Sempre attivo"},"links":{"cookie":"#cookie","privacy":"#privacy"},"categories":{"necessary":{"id":"necessary","label":"Necessari","description":"Sempre attivi.","required":true},"statistics":{"id":"statistics","label":"Statistiche","description":"Misurazione.","required":false},"marketing":{"id":"marketing","label":"Marketing","description":"Ads.","required":false},"embeds":{"id":"embeds","label":"Contenuti esterni","description":"YouTube.","required":false}},"services":[{"id":"gtm","name":"GTM","category":"statistics","cookies":["_ga"]}],"cookie":{"name":"joomcookies_consent","days":180,"path":"/","sameSite":"Lax"},"youtube":{"nocookie":true,"thumbnails":"local"},"ui":{"reopen":true,"diagnostic":true},"reloadOnRevoke":true}</script>
+  <div id="joomcookies-root" class="jck-root" data-jck-root="1">
+    <button type="button" class="jck-reopen" data-jck-open-prefs="1" aria-haspopup="dialog">Preferenze cookie</button>
+    <div class="jck-overlay" data-jck-overlay="1" hidden></div>
+    <section class="jck-banner jck-banner--bottom" data-jck-banner="1" hidden role="dialog" aria-modal="true" aria-labelledby="jck-banner-title" tabindex="-1">
+      <div class="jck-banner__inner">
+        <h2 id="jck-banner-title" class="jck-title">Usiamo i cookie</h2>
+        <div class="jck-message">Statistiche e contenuti restano bloccati finché non scegli.</div>
+        <div class="jck-links"><a class="jck-link" href="#cookie">Cookie policy</a><a class="jck-link" href="#privacy">Privacy policy</a></div>
+        <div class="jck-actions">
+          <button type="button" class="jck-btn jck-btn--reject" data-jck-action="reject">Rifiuta tutti</button>
+          <button type="button" class="jck-btn jck-btn--ghost" data-jck-action="customize">Personalizza</button>
+          <button type="button" class="jck-btn jck-btn--accept" data-jck-action="accept">Accetta tutti</button>
+        </div>
+      </div>
+    </section>
+    <section class="jck-panel" data-jck-panel="1" hidden role="dialog" aria-modal="true" aria-labelledby="jck-panel-title" tabindex="-1">
+      <div class="jck-panel__inner">
+        <div class="jck-panel__head"><h2 id="jck-panel-title" class="jck-title">Preferenze cookie</h2><button type="button" class="jck-icon-btn" data-jck-action="close" aria-label="Chiudi">×</button></div>
+        <div class="jck-panel__body">
+          <div class="jck-category"><div class="jck-category__row"><label class="jck-switch" for="jck-cat-necessary"><input type="checkbox" id="jck-cat-necessary" data-jck-category-toggle="necessary" checked disabled><span class="jck-switch__ui"></span><span class="jck-switch__label">Necessari</span></label><span class="jck-badge">Sempre attivo</span></div></div>
+          <div class="jck-category"><div class="jck-category__row"><label class="jck-switch" for="jck-cat-statistics"><input type="checkbox" id="jck-cat-statistics" data-jck-category-toggle="statistics"><span class="jck-switch__ui"></span><span class="jck-switch__label">Statistiche</span></label></div></div>
+          <div class="jck-category"><div class="jck-category__row"><label class="jck-switch" for="jck-cat-marketing"><input type="checkbox" id="jck-cat-marketing" data-jck-category-toggle="marketing"><span class="jck-switch__ui"></span><span class="jck-switch__label">Marketing</span></label></div></div>
+          <div class="jck-category"><div class="jck-category__row"><label class="jck-switch" for="jck-cat-embeds"><input type="checkbox" id="jck-cat-embeds" data-jck-category-toggle="embeds"><span class="jck-switch__ui"></span><span class="jck-switch__label">Contenuti esterni</span></label></div></div>
+        </div>
+        <div class="jck-actions">
+          <button type="button" class="jck-btn jck-btn--reject" data-jck-action="reject">Rifiuta tutti</button>
+          <button type="button" class="jck-btn jck-btn--accept" data-jck-action="save">Salva preferenze</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script src="../../extensions/plg_system_joomcookies/media/js/joomcookies.js"></script>
+</body>
+</html>

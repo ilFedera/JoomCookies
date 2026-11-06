@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="plugin" group="system" method="upgrade">
+	<name>PLG_SYSTEM_JOOMCOOKIES</name>
+	<author>JoomCookies</author>
+	<creationDate>2026-11</creationDate>
+	<copyright>(C) 2026 JoomCookies</copyright>
+	<license>GNU General Public License version 2 or later; see LICENSE.txt</license>
+	<authorEmail></authorEmail>
+	<authorUrl></authorUrl>
+	<version>1.0.0</version>
+	<description>PLG_SYSTEM_JOOMCOOKIES_XML_DESCRIPTION</description>
+	<namespace path="src">JoomCookies\Plugin\System\Joomcookies</namespace>
+	<scriptfile>script.php</scriptfile>
+	<files>
+		<folder plugin="joomcookies">services</folder>
+		<folder>src</folder>
+		<folder>language</folder>
+		<filename>LICENSE.txt</filename>
+	</files>
+	<media destination="plg_system_joomcookies" folder="media">
+		<filename>joomla.asset.json</filename>
+		<folder>css</folder>
+		<folder>js</folder>
+	</media>
+	<languages>
+		<language tag="en-GB">language/en-GB/plg_system_joomcookies.ini</language>
+		<language tag="en-GB">language/en-GB/plg_system_joomcookies.sys.ini</language>
+		<language tag="it-IT">language/it-IT/plg_system_joomcookies.ini</language>
+		<language tag="it-IT">language/it-IT/plg_system_joomcookies.sys.ini</language>
+	</languages>
+	<config>
+		<fields name="params">
+			<fieldset name="basic" label="PLG_SYSTEM_JOOMCOOKIES_FIELDSET_BASIC">
+				<field
+					name="enabled"
+					type="radio"
+					label="PLG_SYSTEM_JOOMCOOKIES_ENABLED"
+					description="PLG_SYSTEM_JOOMCOOKIES_ENABLED_DESC"
+					class="btn-group btn-group-yesno"
+					default="1"
+					filter="integer"
+					>
+					<option value="1">JYES</option>
+					<option value="0">JNO</option>
+				</field>
+				<field
+					name="consent_version"
+					type="text"
+					label="PLG_SYSTEM_JOOMCOOKIES_CONSENT_VERSION"
+					description="PLG_SYSTEM_JOOMCOOKIES_CONSENT_VERSION_DESC"
+					default="1"
+					filter="cmd"
+					required="true"
+				/>
+				<field
+					name="cookie_lifetime_days"
+					type="number"
+					label="PLG_SYSTEM_JOOMCOOKIES_COOKIE_LIFETIME"
+					description="PLG_SYSTEM_JOOMCOOKIES_COOKIE_LIFETIME_DESC"
+					default="180"
+					min="1"
+					max="730"
+					filter="integer"
+				/>
+				<field
+					name="show_reopen_button"
+					type="radio"
+					label="PLG_SYSTEM_JOOMCOOKIES_REOPEN"
+					description="PLG_SYSTEM_JOOMCOOKIES_REOPEN_DESC"
+					class="btn-group btn-group-yesno"
+					default="1"
+					filter="integer"
+					>
+					<option value="1">JYES</option>
+					<option value="0">JNO</option>
+				</field>
+				<field
+					name="diagnostic"
+					type="radio"
+					label="PLG_SYSTEM_JOOMCOOKIES_DIAGNOSTIC"
+					description="PLG_SYSTEM_JOOMCOOKIES_DIAGNOSTIC_DESC"
+					class="btn-group btn-group-yesno"
+					default="0"
+					filter="integer"
+					>
+					<option value="1">JYES</option>
+					<option value="0">JNO</option>
+				</field>
+				<field
+					name="cookie_policy_url"
+					type="text"
+					label="PLG_SYSTEM_JOOMCOOKIES_COOKIE_POLICY_URL"
+					description="PLG_SYSTEM_JOOMCOOKIES_COOKIE_POLICY_URL_DESC"
+					filter="string"
+					hint="privacy/cookie-policy"
+				/>
+				<field
+					name="privacy_policy_url"
+					type="text"
+					label="PLG_SYSTEM_JOOMCOOKIES_PRIVACY_POLICY_URL"
+					description="PLG_SYSTEM_JOOMCOOKIES_PRIVACY_POLICY_URL_DESC"
+					filter="string"
+					hint="privacy/privacy-policy"
+				/>
+			</fieldset>
+			<fieldset name="appearance" label="PLG_SYSTEM_JOOMCOOKIES_FIELDSET_APPEARANCE">
+				<field
+					name="position"
+					type="list"
+					label="PLG_SYSTEM_JOOMCOOKIES_POSITION"
+					description="PLG_SYSTEM_JOOMCOOKIES_POSITION_DESC"
+					default="bottom"
+					filter="cmd"
+					>
+					<option value="bottom">PLG_SYSTEM_JOOMCOOKIES_POSITION_BOTTOM</option>
+					<option value="top">PLG_SYSTEM_JOOMCOOKIES_POSITION_TOP</option>
+					<option value="box-left">PLG_SYSTEM_JOOMCOOKIES_POSITION_BOX_LEFT</option>
+					<option value="box-right">PLG_SYSTEM_JOOMCOOKIES_POSITION_BOX_RIGHT</option>
+					<option value="modal">PLG_SYSTEM_JOOMCOOKIES_POSITION_MODAL</option>
+				</field>
+				<field name="color_background" type="color" label="PLG_SYSTEM_JOOMCOOKIES_COLOR_BG" default="#111827" filter="string"/>
+				<field name="color_text" type="color" label="PLG_SYSTEM_JOOMCOOKIES_COLOR_TEXT" default="#F9FAFB" filter="string"/>
+				<field name="color_accent" type="color" label="PLG_SYSTEM_JOOMCOOKIES_COLOR_ACCENT" default="#2563EB" filter="string"/>
+				<field name="color_button_text" type="color" label="PLG_SYSTEM_JOOMCOOKIES_COLOR_BUTTON_TEXT" default="#FFFFFF" filter="string"/>
+				<field name="color_muted" type="color" label="PLG_SYSTEM_JOOMCOOKIES_COLOR_MUTED" default="#D1D5DB" filter="string"/>
+			</fieldset>
+			<fieldset name="texts" label="PLG_SYSTEM_JOOMCOOKIES_FIELDSET_TEXTS">
+				<field name="text_title" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_TITLE" filter="string"/>
+				<field name="text_message" type="textarea" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_MESSAGE" filter="safehtml" rows="4"/>
+				<field name="text_accept" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_ACCEPT" filter="string"/>
+				<field name="text_reject" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_REJECT" filter="string"/>
+				<field name="text_customize" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_CUSTOMIZE" filter="string"/>
+				<field name="text_save" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_SAVE" filter="string"/>
+				<field name="text_close" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_CLOSE" filter="string"/>
+				<field name="text_reopen" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_REOPEN" filter="string"/>
+				<field name="text_prefs_title" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_PREFS_TITLE" filter="string"/>
+				<field name="text_cookie_link" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_COOKIE_LINK" filter="string"/>
+				<field name="text_privacy_link" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_PRIVACY_LINK" filter="string"/>
+			</fieldset>
+			<fieldset name="categories" label="PLG_SYSTEM_JOOMCOOKIES_FIELDSET_CATEGORIES">
+				<field name="cat_necessary_label" type="text" label="PLG_SYSTEM_JOOMCOOKIES_CAT_NECESSARY" filter="string"/>
+				<field name="cat_necessary_desc" type="textarea" label="PLG_SYSTEM_JOOMCOOKIES_CAT_NECESSARY_DESC_LABEL" filter="safehtml" rows="3"/>
+				<field name="cat_statistics_label" type="text" label="PLG_SYSTEM_JOOMCOOKIES_CAT_STATISTICS" filter="string"/>
+				<field name="cat_statistics_desc" type="textarea" label="PLG_SYSTEM_JOOMCOOKIES_CAT_STATISTICS_DESC_LABEL" filter="safehtml" rows="3"/>
+				<field name="cat_marketing_label" type="text" label="PLG_SYSTEM_JOOMCOOKIES_CAT_MARKETING" filter="string"/>
+				<field name="cat_marketing_desc" type="textarea" label="PLG_SYSTEM_JOOMCOOKIES_CAT_MARKETING_DESC_LABEL" filter="safehtml" rows="3"/>
+				<field name="cat_embeds_label" type="text" label="PLG_SYSTEM_JOOMCOOKIES_CAT_EMBEDS" filter="string"/>
+				<field name="cat_embeds_desc" type="textarea" label="PLG_SYSTEM_JOOMCOOKIES_CAT_EMBEDS_DESC_LABEL" filter="safehtml" rows="3"/>
+			</fieldset>
+			<fieldset name="youtube" label="PLG_SYSTEM_JOOMCOOKIES_FIELDSET_YOUTUBE">
+				<field
+					name="youtube_nocookie"
+					type="radio"
+					label="PLG_SYSTEM_JOOMCOOKIES_YOUTUBE_NOCOOKIE"
+					description="PLG_SYSTEM_JOOMCOOKIES_YOUTUBE_NOCOOKIE_DESC"
+					class="btn-group btn-group-yesno"
+					default="1"
+					filter="integer"
+					>
+					<option value="1">JYES</option>
+					<option value="0">JNO</option>
+				</field>
+				<field
+					name="youtube_thumbnails"
+					type="list"
+					label="PLG_SYSTEM_JOOMCOOKIES_YOUTUBE_THUMBNAILS"
+					description="PLG_SYSTEM_JOOMCOOKIES_YOUTUBE_THUMBNAILS_DESC"
+					default="local"
+					filter="cmd"
+					>
+					<option value="local">PLG_SYSTEM_JOOMCOOKIES_YOUTUBE_THUMBNAILS_LOCAL</option>
+					<option value="youtube">PLG_SYSTEM_JOOMCOOKIES_YOUTUBE_THUMBNAILS_YOUTUBE</option>
+				</field>
+				<field name="text_youtube_blocked" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_YOUTUBE_BLOCKED" filter="string"/>
+				<field name="text_youtube_load" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_YOUTUBE_LOAD" filter="string"/>
+				<field name="text_youtube_help" type="textarea" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_YOUTUBE_HELP" filter="string" rows="2"/>
+				<field name="text_embed_blocked" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_EMBED_BLOCKED" filter="string"/>
+				<field name="text_embed_load" type="text" label="PLG_SYSTEM_JOOMCOOKIES_TEXT_EMBED_LOAD" filter="string"/>
+			</fieldset>
+			<fieldset name="services" label="PLG_SYSTEM_JOOMCOOKIES_FIELDSET_SERVICES">
+				<field
+					name="services"
+					type="subform"
+					label="PLG_SYSTEM_JOOMCOOKIES_SERVICES"
+					description="PLG_SYSTEM_JOOMCOOKIES_SERVICES_DESC"
+					multiple="true"
+					layout="joomla.form.field.subform.repeatable-table"
+					>
+					<form>
+						<field name="id" type="text" label="PLG_SYSTEM_JOOMCOOKIES_SERVICE_ID" filter="cmd" required="true"/>
+						<field name="name" type="text" label="PLG_SYSTEM_JOOMCOOKIES_SERVICE_NAME" filter="string"/>
+						<field
+							name="category"
+							type="list"
+							label="PLG_SYSTEM_JOOMCOOKIES_SERVICE_CATEGORY"
+							filter="cmd"
+							required="true"
+							>
+							<option value="statistics">PLG_SYSTEM_JOOMCOOKIES_CAT_STATISTICS</option>
+							<option value="marketing">PLG_SYSTEM_JOOMCOOKIES_CAT_MARKETING</option>
+							<option value="embeds">PLG_SYSTEM_JOOMCOOKIES_CAT_EMBEDS</option>
+						</field>
+						<field
+							name="match_type"
+							type="list"
+							label="PLG_SYSTEM_JOOMCOOKIES_SERVICE_MATCH_TYPE"
+							filter="cmd"
+							default="domain"
+							>
+							<option value="domain">PLG_SYSTEM_JOOMCOOKIES_MATCH_DOMAIN</option>
+							<option value="url_contains">PLG_SYSTEM_JOOMCOOKIES_MATCH_URL</option>
+							<option value="script_id">PLG_SYSTEM_JOOMCOOKIES_MATCH_SCRIPT_ID</option>
+							<option value="content_contains">PLG_SYSTEM_JOOMCOOKIES_MATCH_CONTENT</option>
+						</field>
+						<field name="match_value" type="text" label="PLG_SYSTEM_JOOMCOOKIES_SERVICE_MATCH_VALUE" filter="string" required="true"/>
+						<field name="cookies" type="text" label="PLG_SYSTEM_JOOMCOOKIES_SERVICE_COOKIES" filter="string"/>
+					</form>
+				</field>
+			</fieldset>
+		</fields>
+	</config>
+</extension>
