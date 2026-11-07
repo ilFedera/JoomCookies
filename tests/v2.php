@@ -152,7 +152,9 @@ assertTrue(str_contains($js, 'takeRecords()'), 'Observer queue is drained while 
 assertTrue(str_contains($js, 'isOwnYoutubeNode'), 'Observer ignores JoomCookies own DOM mutations');
 assertTrue(!str_contains($js, "document.querySelectorAll('[data-jck-youtube]').forEach(refreshYoutubeActions)"), 'Enhance does not refresh every YouTube node on each mutation');
 assertTrue(str_contains($js, 'JoomCookies: frontend init skipped'), 'Start errors are caught without breaking the page');
-assertTrue(str_contains($js, 'renderYoutubePlaceholder(node, videoId)'), 'Revoked YouTube players restore placeholders');
+assertTrue(str_contains($js, "renderYoutubePlaceholder(node, videoId, (payload && payload.title) || '')"), 'Revoked YouTube players restore placeholders');
+assertTrue(str_contains($js, 'jck-youtube-play') && str_contains($js, 'Riproduci video YouTube'), 'YouTube placeholder has an accessible dedicated Play control');
+assertTrue(str_contains($js, 'openPreferences(category)') && str_contains($js, 'data-jck-manual'), 'Unconsented Play opens the relevant category and cf-youtube does not autoload');
 assertTrue(str_contains($js, 'adaptYoothemeLoadQueue'), 'YOOtheme $load queue is adapted after statistics consent');
 assertTrue(str_contains($js, 'updateGoogleConsentMode'), 'Consent Mode is updated from the visitor choice');
 assertTrue(str_contains($js, 'isGoogleAnalyticsNetwork'), 'Dynamic gtag injection is recognized without blocking reCAPTCHA');
@@ -165,8 +167,8 @@ assertTrue(str_contains($pluginSrc, 'FrontendAssets::protectionAttributes'), 'In
 $assetClass = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/src/Service/FrontendAssets.php') ?: '';
 assertTrue(str_contains($assetClass, 'data-no-delay') && str_contains($assetClass, 'data-no-combine'), 'LiteSpeed delay/combine are opted out on JoomCookies assets');
 $assetJson = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/joomla.asset.json') ?: '';
-assertTrue(str_contains($assetJson, '"2.2.15"') && str_contains($assetJson, 'data-no-delay'), 'WebAsset registry versions assets and skips LiteSpeed delay');
-assertTrue(\JoomCookies\Plugin\System\Joomcookies\Service\FrontendAssets::version() === '2.2.15', 'FrontendAssets version is 2.2.15');
+assertTrue(str_contains($assetJson, '"2.2.16"') && str_contains($assetJson, 'data-no-delay'), 'WebAsset registry versions assets and skips LiteSpeed delay');
+assertTrue(\JoomCookies\Plugin\System\Joomcookies\Service\FrontendAssets::version() === '2.2.16', 'FrontendAssets version is 2.2.16');
 
 $driver = new UnavailableBrowserScanDriver();
 assertTrue($driver->isAvailable() === false, 'Browser driver is not available');

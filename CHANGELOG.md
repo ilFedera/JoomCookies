@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.2.16
+- Interfaccia YouTube locale con Play rosso accessibile, messaggio privacy e apertura/focus diretto della categoria Contenuti esterni; i componenti `cf-youtube` restano manuali anche dopo consenso.
+
 ## 2.2.15
 - Le miniature locali `cf-youtube` sono ora esclusivamente 16:9: priorità a `maxresdefault`, fallback a `mqdefault`; cache 4:3 rigenerata.
 
