@@ -72,6 +72,7 @@ assertTrue(YoutubeEmbed::videoId('youtube.com/watch?v=dQw4w9WgXcQ') === 'dQw4w9W
 assertTrue(YoutubeEmbed::videoId('https://evil.example/dQw4w9WgXcQ') === null, 'Unknown host rejected');
 assertTrue(YoutubeEmbed::videoId('not-an-id') === null, 'Invalid id rejected');
 assertTrue(str_contains(YoutubeEmbed::playerSrc('dQw4w9WgXcQ', true), 'youtube-nocookie.com'), 'Privacy host used');
+assertTrue(preg_match(YoutubeEmbed::CF_SHORTCODE_PATTERN, '{cfyoutube dQw4w9WgXcQ}') === 1, 'cfyoutube shortcode accepts a valid YouTube ID');
 
 $registry = new ServiceRegistry([
     [
@@ -206,6 +207,8 @@ $xss = (new HtmlGuard($registry, [
 ], $denied))->replaceShortcodes('{joomcookies youtube="dQw4w9WgXcQ" title="<img src=x onerror=alert(1)>"}');
 
 assertTrue(!str_contains($xss, '<img src=x'), 'Shortcode title is escaped');
+$cfShortcode = $guard->replaceShortcodes('{cfyoutube dQw4w9WgXcQ}');
+assertTrue(str_contains($cfShortcode, 'class="cf-youtube"') && str_contains($cfShortcode, 'data-video-id="dQw4w9WgXcQ"'), 'cfyoutube shortcode produces the Grid-compatible local component');
 
 $roots = [
     dirname(__DIR__) . '/extensions',

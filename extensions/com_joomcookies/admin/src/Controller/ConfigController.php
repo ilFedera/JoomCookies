@@ -30,7 +30,7 @@ class ConfigController extends BaseController
         $allowed = match ($view) {
             'banner' => ['position', 'color_background', 'color_text', 'color_accent', 'color_button_text', 'color_muted', 'show_reopen_button'],
             'texts' => ['text_title', 'text_message', 'text_accept', 'text_reject', 'text_customize', 'text_save', 'text_close', 'text_reopen', 'text_prefs_title', 'text_prefs_desc', 'text_cookie_link', 'text_privacy_link', 'cookie_policy_url', 'privacy_policy_url'],
-            'youtube' => ['youtube_nocookie', 'youtube_thumbnails', 'text_youtube_blocked', 'text_youtube_load', 'text_youtube_prefs', 'text_youtube_help', 'text_embed_blocked', 'text_embed_load', 'text_embed_help'],
+            'youtube' => ['youtube_nocookie', 'text_youtube_blocked', 'text_youtube_load', 'text_youtube_prefs', 'text_youtube_help', 'text_embed_blocked', 'text_embed_load', 'text_embed_help'],
             'dashboard' => ['enabled', 'consent_version', 'diagnostic', 'cookie_lifetime_days'],
             'scan' => ['scan_max_pages', 'scan_max_depth', 'scan_max_seconds', 'scan_start_url', 'scan_discovery'],
             'settings' => ['enabled', 'consent_version', 'cookie_lifetime_days', 'diagnostic', 'scan_max_pages', 'scan_max_depth', 'scan_max_seconds', 'scan_start_url', 'scan_discovery'],

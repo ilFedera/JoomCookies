@@ -160,6 +160,10 @@ final class HtmlGuard
 
     public function replaceShortcodes(string $html): string
     {
+        $html = preg_replace_callback(YoutubeEmbed::CF_SHORTCODE_PATTERN, function (array $match): string {
+            $id = YoutubeEmbed::videoId($match[1] !== '' ? $match[1] : ($match[2] !== '' ? $match[2] : $match[3]));
+            return $id === null ? $match[0] : '<div class="cf-youtube" data-video-id="' . htmlspecialchars($id, ENT_QUOTES, 'UTF-8') . '"></div>';
+        }, $html) ?? $html;
         return preg_replace_callback(
             YoutubeEmbed::SHORTCODE_PATTERN,
             function (array $match): string {

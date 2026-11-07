@@ -29,6 +29,6 @@ I cookie dei servizi terzi (`_ga`, `_fbp`, ecc.) possono essere creati **solo do
 
 ## Miniature YouTube
 
-La modalità predefinita è locale. Abilitare "Miniatura YouTube" fa partire una richiesta a `i.ytimg.com` prima del consenso: è una scelta amministrativa esplicita e va descritta nell'informativa se usata.
+Le miniature sono servite esclusivamente dalla cache locale `images/youtube/`. Il browser non contatta `i.ytimg.com` prima del consenso.
 
 `youtube-nocookie.com` riduce alcuni cookie YouTube ma **non** elimina il trasferimento di dati verso Google al caricamento del player.

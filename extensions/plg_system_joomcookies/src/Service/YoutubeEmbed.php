@@ -15,6 +15,7 @@ namespace JoomCookies\Plugin\System\Joomcookies\Service;
 final class YoutubeEmbed
 {
     public const SHORTCODE_PATTERN = '/\{joomcookies\s+youtube(?:=|\s+id=|\s+video=)?(?:"([^"]+)"|\'([^\']+)\'|([A-Za-z0-9_-]{11}))([^}]*)\}/i';
+    public const CF_SHORTCODE_PATTERN = '/\{cfyoutube\s+(?:"([^"]+)"|\'([^\']+)\'|([A-Za-z0-9_-]{11}))\}/i';
 
     public static function videoId(string $value): ?string
     {

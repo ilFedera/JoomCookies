@@ -65,7 +65,8 @@ final class ConfigBuilder
             ],
             'youtube'            => [
                 'nocookie'   => (int) $params->get('youtube_nocookie', 1) === 1,
-                'thumbnails' => self::thumbnails((string) $params->get('youtube_thumbnails', 'local')),
+                'thumbnails' => 'local',
+                'thumbnailEndpoint' => rtrim(Uri::root(true), '/') . '/index.php?option=com_joomcookies&task=youtube.thumbnail',
             ],
             'ui'                 => [
                 'reopen'     => (int) $params->get('show_reopen_button', 1) === 1,
@@ -229,11 +230,6 @@ final class ConfigBuilder
         $allowed = ['bottom', 'top', 'box-left', 'box-right', 'modal'];
 
         return \in_array($value, $allowed, true) ? $value : 'bottom';
-    }
-
-    private static function thumbnails(string $value): string
-    {
-        return \in_array($value, ['local', 'youtube'], true) ? $value : 'local';
     }
 
     private static function url(string $value): string

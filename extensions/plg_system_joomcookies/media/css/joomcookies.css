@@ -359,6 +359,7 @@ html.jck-prefs-open {
 }
 
 .jck-embed__surface {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -370,7 +371,25 @@ html.jck-prefs-open {
   background-position: center;
 }
 
+.jck-embed__thumbnail {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.jck-embed__surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.1), rgba(15, 23, 42, 0.7));
+}
+
 .jck-embed__panel {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -384,6 +403,15 @@ html.jck-prefs-open {
   box-sizing: border-box;
   overflow: hidden;
 }
+
+.cf-youtube > .jck-cf-youtube__media {
+  position: relative;
+  width: 100%;
+  margin: 0 0 1rem;
+  aspect-ratio: 16 / 9;
+}
+
+.cf-youtube > .jck-cf-youtube__media > .jck-embed { height: 100%; }
 
 .jck-embed__icon {
   display: inline-flex;

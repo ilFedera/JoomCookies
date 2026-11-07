@@ -73,6 +73,10 @@ Prima del consenso: nessun iframe, nessuna richiesta a `youtube.com` / `youtube-
 
 Dopo «Accetta tutti» o l'autorizzazione di Contenuti esterni: i segnaposto diventano iframe verso `youtube-nocookie.com` (predefinito) **senza autoplay**. Il HTML pubblico resta bloccato (cache-safe); lo sblocco avviene in JavaScript.
 
+### Miniature locali e Grid YOOtheme
+
+`{cfyoutube ID}` genera `.cf-youtube[data-video-id]`; lo stesso markup può essere inserito in una Grid YOOtheme. Il runtime inserisce un contenitore 16:9 senza alterare titolo e descrizione. L'amministratore scarica la miniatura con ACL e token CSRF dalla pagina YouTube: il server può contattare esclusivamente `https://i.ytimg.com/vi/{ID}/hqdefault.jpg`, con ID di 11 caratteri e limite di dimensione. Il file è salvato in `images/youtube/` come WebP quando GD lo supporta, altrimenti JPEG; un file già presente non viene riscaricato. L'endpoint pubblico serve solo file già in cache, non esegue download e accetta esclusivamente un ID valido.
+
 API pubblica:
 
 ```javascript

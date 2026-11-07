@@ -542,11 +542,19 @@
     return host + '/embed/' + encodeURIComponent(videoId);
   }
 
-  function renderYoutubePlaceholder(node, videoId) {
+  function localThumbnailUrl(videoId) {
+    var endpoint = config && config.youtube && config.youtube.thumbnailEndpoint;
+    if (!endpoint) {
+      return '';
+    }
+    return endpoint + (endpoint.indexOf('?') === -1 ? '?' : '&') + 'id=' + encodeURIComponent(videoId);
+  }
+
+  function renderYoutubePlaceholder(node, videoId, title) {
     var texts = youtubeTexts();
     var payload = {
       src: youtubePlayerSrc(videoId),
-      title: texts.title,
+      title: title || texts.title,
       attrs: {},
       category: 'embeds',
       service: 'youtube',
@@ -560,14 +568,44 @@
     node.classList.add('jck-embed', 'jck-embed--youtube');
     node.style.setProperty('--jck-ratio', '16 / 9');
     node.setAttribute('role', 'group');
-    node.setAttribute('aria-label', texts.title);
+    node.setAttribute('aria-label', title || texts.title);
+    var thumbnail = localThumbnailUrl(videoId);
     node.innerHTML = ''
       + '<div class="jck-embed__surface"><div class="jck-embed__panel">'
+      + (thumbnail ? '<img class="jck-embed__thumbnail" src="' + thumbnail + '" alt="" loading="lazy" decoding="async">' : '')
       + '<span class="jck-embed__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" focusable="false"><path fill="currentColor" d="M8 5v14l11-7z"></path></svg></span>'
-      + '<p class="jck-embed__title">' + texts.title + '</p>'
+      + '<p class="jck-embed__title">' + (title || texts.title) + '</p>'
       + '<p class="jck-embed__text">' + texts.help + '</p>'
       + '<div class="jck-embed__actions"></div></div></div>';
     refreshYoutubeActions(node);
+  }
+
+  function cfYoutubeTitle(card) {
+    var title = card.querySelector('.el-title, h1, h2, h3, h4, h5, h6');
+    return title ? title.textContent.trim() : '';
+  }
+
+  function enhanceCfYoutubeCards(rootNode) {
+    var scope = rootNode && rootNode.querySelectorAll ? rootNode : document;
+    var cards = [];
+    if (rootNode && rootNode.nodeType === 1 && rootNode.classList && rootNode.classList.contains('cf-youtube')) { cards.push(rootNode); }
+    if (scope.querySelectorAll) { scope.querySelectorAll('.cf-youtube[data-video-id]').forEach(function (card) { cards.push(card); }); }
+    cards.forEach(function (card) {
+      var videoId = youtubeIdFromValue(card.getAttribute('data-video-id') || '');
+      if (!videoId) { return; }
+      var media = null;
+      Array.prototype.forEach.call(card.children || [], function (child) {
+        if (!media && child.classList && child.classList.contains('jck-cf-youtube__media')) { media = child; }
+      });
+      if (!media) {
+        media = document.createElement('div');
+        media.className = 'jck-cf-youtube__media';
+        card.insertBefore(media, card.firstChild);
+      }
+      if (!media.hasAttribute('data-jck-youtube')) { renderYoutubePlaceholder(media, videoId, cfYoutubeTitle(card)); }
+      else { refreshYoutubeActions(media); }
+      if (currentCategories().embeds) { loadYoutubeIfAllowed(media); }
+    });
   }
 
   function isOwnYoutubeNode(node) {
@@ -641,6 +679,7 @@
         host.setAttribute('data-jck-yt', '1');
         renderYoutubePlaceholder(host, videoId);
       });
+      enhanceCfYoutubeCards(rootNode || document);
       if (currentCategories().embeds) {
         hosts.forEach(function (host) {
           loadYoutubeIfAllowed(host);
@@ -678,7 +717,7 @@
             continue;
           }
           stripUnauthorizedAnalytics(node);
-          if ((node.classList && node.classList.contains('youtube-player')) || (node.querySelector && node.querySelector('.youtube-player'))) {
+          if ((node.classList && (node.classList.contains('youtube-player') || node.classList.contains('cf-youtube'))) || (node.querySelector && node.querySelector('.youtube-player, .cf-youtube'))) {
             pending.push(node);
           }
         }

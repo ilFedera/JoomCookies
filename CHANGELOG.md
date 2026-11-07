@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.14
+- Supporto a `{cfyoutube ID}` e ai contenitori YOOtheme `.cf-youtube[data-video-id]`, con placeholder locale 16:9 e osservazione del contenuto dinamico.
+- Cache amministrativa delle miniature YouTube in `images/youtube/` (WebP con fallback JPEG); endpoint pubblico locale senza download remoto.
+
 ## 2.2.13
 - Registro persistente e deduplicato dei cookie realmente osservati tramite header HTTP, senza memorizzare valori o token; include dominio, path, durata, attributi, fonte e momento dell'osservazione.
 - Scheda Cookie rilevati trasformata in registro osservazionale, con export CSV. Una scansione browser assente resta esplicitamente non eseguita: nessun risultato è simulato.
