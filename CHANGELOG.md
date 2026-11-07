@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.2.15
+- Le miniature locali `cf-youtube` sono ora esclusivamente 16:9: priorità a `maxresdefault`, fallback a `mqdefault`; cache 4:3 rigenerata.
+
 ## 2.2.14
 - Supporto a `{cfyoutube ID}` e ai contenitori YOOtheme `.cf-youtube[data-video-id]`, con placeholder locale 16:9 e osservazione del contenuto dinamico.
 - Cache amministrativa delle miniature YouTube in `images/youtube/` (WebP con fallback JPEG); endpoint pubblico locale senza download remoto.

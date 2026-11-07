@@ -73,7 +73,7 @@ $thumbnailEndpoint = file_get_contents(dirname(__DIR__) . '/extensions/com_joomc
 assertTrue(str_contains($ctrlSrc, 'use JoomCookies\\Component\\Joomcookies\\Administrator\\Service\\Scan\\HttpCrawler'), 'ScanController imports HttpCrawler from the Scan service namespace');
 assertTrue(str_contains($ctrlSrc, 'X-LiteSpeed-Cache-Control'), 'Scan JSON responses opt out of LiteSpeed cache');
 assertTrue(str_contains($ctrlSrc, 'ScanAjax::wantsJson()'), 'JSON responses do not depend on Joomla InputFilter for XHR');
-assertTrue(str_contains($thumbnailCache, 'i.ytimg.com/vi/') && str_contains($thumbnailCache, 'validId') && str_contains($thumbnailCache, 'imagewebp'), 'Thumbnail cache only fetches validated IDs from the fixed YouTube image host with WebP fallback');
+assertTrue(str_contains($thumbnailCache, 'maxresdefault.jpg') && str_contains($thumbnailCache, 'mqdefault.jpg') && str_contains($thumbnailCache, 'isSixteenByNine'), 'Thumbnail cache only accepts 16:9 images from fixed YouTube thumbnail variants');
 assertTrue(!str_contains($thumbnailEndpoint, 'file_get_contents') && str_contains($thumbnailEndpoint, 'is_file'), 'Public thumbnail endpoint serves only existing local files');
 
 $js = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/media/js/scan.js') ?: '';

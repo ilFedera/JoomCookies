@@ -14,7 +14,7 @@ namespace JoomCookies\Plugin\System\Joomcookies\Service;
  */
 final class FrontendAssets
 {
-    public const VERSION = '2.2.14';
+    public const VERSION = '2.2.15';
 
     public static function version(): string
     {

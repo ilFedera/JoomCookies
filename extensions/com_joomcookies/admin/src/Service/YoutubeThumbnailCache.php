@@ -17,7 +17,7 @@ final class YoutubeThumbnailCache
         if (!self::validId($id)) { return null; }
         foreach (['webp', 'jpg'] as $extension) {
             $file = self::directory() . '/' . $id . '.' . $extension;
-            if (is_file($file)) { return $file; }
+            if (is_file($file) && self::isSixteenByNine(@getimagesize($file))) { return $file; }
         }
         return null;
     }
@@ -29,10 +29,16 @@ final class YoutubeThumbnailCache
         $directory = self::directory();
         if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) { throw new \RuntimeException('Cannot create thumbnail cache.'); }
         $context = stream_context_create(['http' => ['timeout' => 10, 'follow_location' => 0, 'user_agent' => 'JoomCookies thumbnail cache/2.2']]);
-        $bytes = @file_get_contents('https://i.ytimg.com/vi/' . rawurlencode($id) . '/hqdefault.jpg', false, $context);
-        if (!is_string($bytes) || $bytes === '' || strlen($bytes) > 3 * 1024 * 1024) { throw new \RuntimeException('Thumbnail download failed.'); }
-        $info = @getimagesizefromstring($bytes);
-        if (!is_array($info) || ($info[2] ?? 0) !== IMAGETYPE_JPEG) { throw new \RuntimeException('Thumbnail is not a JPEG image.'); }
+        $bytes = null;
+        foreach (['maxresdefault.jpg', 'mqdefault.jpg'] as $name) {
+            $candidate = @file_get_contents('https://i.ytimg.com/vi/' . rawurlencode($id) . '/' . $name, false, $context);
+            $info = is_string($candidate) && strlen($candidate) <= 3 * 1024 * 1024 ? @getimagesizefromstring($candidate) : false;
+            if (is_string($candidate) && $candidate !== '' && is_array($info) && ($info[2] ?? 0) === IMAGETYPE_JPEG && self::isSixteenByNine($info)) {
+                $bytes = $candidate;
+                break;
+            }
+        }
+        if (!is_string($bytes)) { throw new \RuntimeException('No 16:9 thumbnail is available.'); }
         $jpg = $directory . '/' . $id . '.jpg';
         if (function_exists('imagecreatefromstring') && function_exists('imagewebp')) {
             $image = @imagecreatefromstring($bytes);
@@ -47,4 +53,11 @@ final class YoutubeThumbnailCache
     }
 
     private static function directory(): string { return rtrim(JPATH_ROOT, '/\\') . '/images/youtube'; }
+
+    /** @param array<int, mixed>|false $info */
+    private static function isSixteenByNine(array|false $info): bool
+    {
+        $width = (int) ($info[0] ?? 0); $height = (int) ($info[1] ?? 0);
+        return $width > 0 && $height > 0 && abs(($width / $height) - (16 / 9)) < 0.01;
+    }
 }

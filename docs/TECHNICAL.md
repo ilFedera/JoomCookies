@@ -75,7 +75,7 @@ Dopo «Accetta tutti» o l'autorizzazione di Contenuti esterni: i segnaposto div
 
 ### Miniature locali e Grid YOOtheme
 
-`{cfyoutube ID}` genera `.cf-youtube[data-video-id]`; lo stesso markup può essere inserito in una Grid YOOtheme. Il runtime inserisce un contenitore 16:9 senza alterare titolo e descrizione. L'amministratore scarica la miniatura con ACL e token CSRF dalla pagina YouTube: il server può contattare esclusivamente `https://i.ytimg.com/vi/{ID}/hqdefault.jpg`, con ID di 11 caratteri e limite di dimensione. Il file è salvato in `images/youtube/` come WebP quando GD lo supporta, altrimenti JPEG; un file già presente non viene riscaricato. L'endpoint pubblico serve solo file già in cache, non esegue download e accetta esclusivamente un ID valido.
+`{cfyoutube ID}` genera `.cf-youtube[data-video-id]`; lo stesso markup può essere inserito in una Grid YOOtheme. Il runtime inserisce un contenitore 16:9 senza alterare titolo e descrizione. L'amministratore scarica la miniatura con ACL e token CSRF dalla pagina YouTube: il server può contattare esclusivamente le varianti fisse `maxresdefault.jpg` e `mqdefault.jpg` di `i.ytimg.com`, con ID di 11 caratteri e limite di dimensione. Accetta e conserva solo immagini 16:9; una vecchia cache 4:3 viene ignorata e rigenerata. Il file è salvato in `images/youtube/` come WebP quando GD lo supporta, altrimenti JPEG. L'endpoint pubblico serve solo file già in cache, non esegue download e accetta esclusivamente un ID valido.
 
 API pubblica:
 
