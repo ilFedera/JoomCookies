@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.2.18
+- Dopo il consenso richiesto da un Play YouTube viene attivato soltanto quel player; gli altri restano miniature finché non vengono selezionati.
+
 ## 2.2.17
 - Corretto il layer della miniatura locale: ora copre l'intera superficie 16:9, con controlli e testo sovrapposti.
 

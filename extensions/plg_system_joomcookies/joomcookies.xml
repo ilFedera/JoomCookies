@@ -7,7 +7,7 @@
 	<license>GNU General Public License version 2 or later; see LICENSE.txt</license>
 	<authorEmail></authorEmail>
 	<authorUrl></authorUrl>
-	<version>2.2.17</version>
+	<version>2.2.18</version>
 	<description>PLG_SYSTEM_JOOMCOOKIES_XML_DESCRIPTION</description>
 	<namespace path="src">JoomCookies\Plugin\System\Joomcookies</namespace>
 	<scriptfile>script.php</scriptfile>
