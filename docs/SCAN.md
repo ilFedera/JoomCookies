@@ -26,7 +26,7 @@ Eseguita dal componente, solo da amministratori con permesso `joomcookies.scan` 
 
 ## Scansione avanzata Playwright/Chromium
 
-**Non operativa** in questa versione.
+**Non operativa senza un worker esterno autorizzato** in questa versione.
 
 Interfaccia: `BrowserScanDriver` / `UnavailableBrowserScanDriver`.
 
@@ -40,7 +40,7 @@ Un worker esterno autorizzato potrà in futuro implementare il contratto per:
 4. caricamento iframe
 5. comportamento prima del consenso, dopo il rifiuto e dopo l'accettazione
 
-Il processo deve restare fuori dalle richieste PHP del sito e non deve partire automaticamente su hosting condiviso.
+Il processo deve restare fuori dalle richieste PHP del sito e non deve partire automaticamente su hosting condiviso. Il contratto richiesto al worker è: contesti browser isolati per URL/scenario (`before_consent`, categoria singola, `accept_all`), metadati cookie senza valori (nome, dominio, path, expires/max-age, Secure, HttpOnly, SameSite, first/third party), URL di osservazione e, se disponibile, URL della risposta Set-Cookie. JoomCookies non invia navigazione a servizi esterni e non installa Playwright/Chromium.
 
 ## Blocco preventivo
 

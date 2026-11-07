@@ -173,6 +173,7 @@ final class HttpCrawler
                         'domain'   => $cookie['domain'],
                         'max_age'  => $cookie['max_age'],
                         'httponly' => !empty($cookie['httponly']),
+                        'secure'   => !empty($cookie['secure']),
                         'path'     => $cookie['path'] ?? '/',
                         'note'     => $note,
                     ]

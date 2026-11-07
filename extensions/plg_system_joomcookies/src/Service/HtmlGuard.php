@@ -237,17 +237,13 @@ final class HtmlGuard
 
         $notice = $this->recaptchaConsentNotice();
 
-        if (preg_match('/<form\b[^>]{0,500}(?:convertforms|com-convertforms|com_convertforms)[^>]*>/i', $html, $match, PREG_OFFSET_CAPTURE) === 1) {
-            $at = $match[0][1] + \strlen($match[0][0]);
-
-            return substr($html, 0, $at) . $notice . substr($html, $at);
-        }
-
-        if (preg_match('/<\/body>/i', $html) === 1) {
-            return preg_replace('/<\/body>/i', $notice . '</body>', $html, 1) ?? ($html . $notice);
-        }
-
-        return $html . $notice;
+        // Convert Forms may wrap its <form> in a module/container. Insert only when
+        // the integration can be tied to that form; never append a page-wide notice.
+        return preg_replace_callback(
+            '/<form\b[^>]*(?:class=(?:"[^"]*(?:convertforms|cf-form)[^"]*"|\'[^\']*(?:convertforms|cf-form)[^\']*\')|id=(?:"[^\"]*(?:convertforms|cf-form)[^\"]*"|\'[^\']*(?:convertforms|cf-form)[^\']*\'))[^>]*>/i',
+            static fn (array $match): string => $match[0] . $notice,
+            $html
+        ) ?? $html;
     }
 
     private function recaptchaConsentNotice(): string

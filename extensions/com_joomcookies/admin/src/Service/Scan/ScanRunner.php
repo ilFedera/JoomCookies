@@ -689,6 +689,13 @@ final class ScanRunner
      */
     private function finish(int $scanId, string $status, array $options, int $elapsedActive = 0, string $completeReason = ''): void
     {
+        if ($status === 'complete') {
+            $query = $this->db->getQuery(true)->select('*')->from($this->db->quoteName('#__joomcookies_findings'))
+                ->where($this->db->quoteName('scan_id') . ' = ' . $scanId)
+                ->where($this->db->quoteName('type') . ' = ' . $this->db->quote('cookie_header'));
+            $this->db->setQuery($query);
+            (new CookieRegistry($this->db))->recordFindings($scanId, $this->db->loadAssocList() ?: []);
+        }
         $summary = $this->progress($scanId, $options, $status);
         $summary['percent'] = 100;
         $summary['percent_final'] = 100;

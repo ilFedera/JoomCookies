@@ -169,6 +169,20 @@ class ScanController extends BaseController
         $this->app->close();
     }
 
+    public function cookiesCsv(): void
+    {
+        $this->authorize();
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+        $q = $db->getQuery(true)->select('*')->from($db->quoteName('#__joomcookies_cookie_registry'))->order($db->quoteName('last_observed_at') . ' DESC');
+        $db->setQuery($q); $rows = $db->loadAssocList() ?: [];
+        $this->noCache(); $this->app->setHeader('Content-Type', 'text/csv; charset=utf-8');
+        $this->app->setHeader('Content-Disposition', 'attachment; filename="joomcookies-cookies.csv"'); $this->app->sendHeaders();
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['name', 'domain', 'path', 'service_id', 'category', 'duration', 'first_party', 'source', 'scenario', 'status', 'last_observed_at']);
+        foreach ($rows as $row) { fputcsv($out, array_map(static fn ($key) => (string) ($row[$key] ?? ''), ['name','domain','path','service_id','category','duration','first_party','source','scenario','status','last_observed_at'])); }
+        fclose($out); $this->app->close();
+    }
+
     public function browserUnavailable(): void
     {
         $driver = new UnavailableBrowserScanDriver();

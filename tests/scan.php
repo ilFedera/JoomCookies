@@ -171,6 +171,10 @@ assertTrue(str_contains($sql, 'joomcookies_scan_queue') && str_contains($sql, 'j
 assertTrue(str_contains($sql, 'classification_status') && str_contains($sql, 'category_suggested'), 'Install schema includes catalogue classification columns');
 $update211 = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/sql/updates/mysql/2.2.11.sql') ?: '';
 assertTrue(str_contains($update211, 'ADD COLUMN `classification_status`'), '2.2.11 update SQL adds catalogue columns');
+$update213 = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/sql/updates/mysql/2.2.13.sql') ?: '';
+$registrySrc = file_get_contents(dirname(__DIR__) . '/extensions/com_joomcookies/admin/src/Service/Scan/CookieRegistry.php') ?: '';
+assertTrue(str_contains($update213, 'joomcookies_cookie_registry') && str_contains($update213, 'idx_cookie_key'), '2.2.13 migration adds a deduplicated cookie register');
+assertTrue(str_contains($registrySrc, "unset(\$meta['value']") && str_contains($registrySrc, "'cookie_key' => \$key"), 'Cookie registry strips values and persists a stable deduplication key');
 
 $unknown = CatalogSync::draftFromFinding([
     'type' => 'script',

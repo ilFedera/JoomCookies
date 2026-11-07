@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.13
+- Registro persistente e deduplicato dei cookie realmente osservati tramite header HTTP, senza memorizzare valori o token; include dominio, path, durata, attributi, fonte e momento dell'osservazione.
+- Scheda Cookie rilevati trasformata in registro osservazionale, con export CSV. Una scansione browser assente resta esplicitamente non eseguita: nessun risultato è simulato.
+- L'avviso reCAPTCHA è inserito esclusivamente dentro form Convert Forms identificati con certezza; eliminato il fallback visibile in fondo alla pagina.
+
 ## 2.2.12 — 2026-11-06
 
 - Avviso reCAPTCHA compatto (`.jck-consent-hint`) al posto del placeholder YouTube 16:9, così «Rifiuta tutti» non distorce i moduli Convert Forms.
