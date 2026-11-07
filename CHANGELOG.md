@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.2.17
+- Corretto il layer della miniatura locale: ora copre l'intera superficie 16:9, con controlli e testo sovrapposti.
+
 ## 2.2.16
 - Interfaccia YouTube locale con Play rosso accessibile, messaggio privacy e apertura/focus diretto della categoria Contenuti esterni; i componenti `cf-youtube` restano manuali anche dopo consenso.
 

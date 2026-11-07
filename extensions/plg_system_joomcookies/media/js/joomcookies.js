@@ -571,8 +571,9 @@
     node.setAttribute('aria-label', title || texts.title);
     var thumbnail = localThumbnailUrl(videoId);
     node.innerHTML = ''
-      + '<div class="jck-embed__surface"><div class="jck-embed__panel">'
+      + '<div class="jck-embed__surface">'
       + (thumbnail ? '<img class="jck-embed__thumbnail" src="' + thumbnail + '" alt="" loading="lazy" decoding="async">' : '')
+      + '<div class="jck-embed__panel">'
       + '<button type="button" class="jck-youtube-play" data-jck-load-embed="1" aria-label="Riproduci video YouTube"><span aria-hidden="true"></span></button>'
       + '<p class="jck-embed__title">' + (title || texts.title) + '</p>'
       + '<p class="jck-embed__text">Attiva i cookie YouTube per riprodurre il video</p>'
