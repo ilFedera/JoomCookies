@@ -144,7 +144,7 @@ assertTrue(!str_contains($crawlerSrc, 'min(50') && !str_contains($scanCtrlSrc, '
 $js = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/js/joomcookies.js') ?: '';
 assertTrue(str_contains($js, 'enhanceYoutubePlayers'), 'Frontend enhances youtube-player containers');
 assertTrue(str_contains($js, 'observeDynamicContent'), 'MutationObserver watches dynamically added videos');
-assertTrue(str_contains($js, 'pendingYoutubeEmbed') && str_contains($js, 'requestedYoutubeEmbed'), 'Only the YouTube player requested before consent is activated after saving preferences');
+assertTrue(str_contains($js, 'loadYoutubeIfAllowed'), 'YouTube iframes load when embeds are allowed');
 assertTrue(str_contains($js, 'withoutAutoplay'), 'YouTube iframes do not autoplay');
 assertTrue(!str_contains($js, 'isYoutubeEmbed(node) && !onlyNode'), 'Accept-all no longer leaves YouTube placeholders in place');
 assertTrue(str_contains($js, 'youtubeBusy'), 'YouTube enhance has a reentrancy guard');
@@ -154,7 +154,7 @@ assertTrue(!str_contains($js, "document.querySelectorAll('[data-jck-youtube]').f
 assertTrue(str_contains($js, 'JoomCookies: frontend init skipped'), 'Start errors are caught without breaking the page');
 assertTrue(str_contains($js, "renderYoutubePlaceholder(node, videoId, (payload && payload.title) || '')"), 'Revoked YouTube players restore placeholders');
 assertTrue(str_contains($js, 'jck-youtube-play') && str_contains($js, 'Riproduci video YouTube'), 'YouTube placeholder has an accessible dedicated Play control');
-assertTrue(str_contains($js, 'openPreferences(category)') && str_contains($js, 'data-jck-manual'), 'Unconsented Play opens the relevant category and cf-youtube does not autoload');
+assertTrue(str_contains($js, 'openPreferences(category)') && str_contains($js, 'activateEmbeds(categories)'), 'Unconsented Play opens the relevant category and all YouTube players activate after consent');
 $surfaceAt = strpos($js, 'jck-embed__surface');
 $thumbnailAt = strpos($js, 'jck-embed__thumbnail');
 $panelAt = strpos($js, 'jck-embed__panel');
@@ -171,8 +171,8 @@ assertTrue(str_contains($pluginSrc, 'FrontendAssets::protectionAttributes'), 'In
 $assetClass = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/src/Service/FrontendAssets.php') ?: '';
 assertTrue(str_contains($assetClass, 'data-no-delay') && str_contains($assetClass, 'data-no-combine'), 'LiteSpeed delay/combine are opted out on JoomCookies assets');
 $assetJson = file_get_contents(dirname(__DIR__) . '/extensions/plg_system_joomcookies/media/joomla.asset.json') ?: '';
-assertTrue(str_contains($assetJson, '"2.2.18"') && str_contains($assetJson, 'data-no-delay'), 'WebAsset registry versions assets and skips LiteSpeed delay');
-assertTrue(\JoomCookies\Plugin\System\Joomcookies\Service\FrontendAssets::version() === '2.2.18', 'FrontendAssets version is 2.2.18');
+assertTrue(str_contains($assetJson, '"2.2.19"') && str_contains($assetJson, 'data-no-delay'), 'WebAsset registry versions assets and skips LiteSpeed delay');
+assertTrue(\JoomCookies\Plugin\System\Joomcookies\Service\FrontendAssets::version() === '2.2.19', 'FrontendAssets version is 2.2.19');
 
 $driver = new UnavailableBrowserScanDriver();
 assertTrue($driver->isAvailable() === false, 'Browser driver is not available');

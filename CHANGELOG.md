@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.2.19
+- Il consenso ai Contenuti esterni attiva tutti i player YouTube presenti nella pagina.
+
 ## 2.2.18
 - Dopo il consenso richiesto da un Play YouTube viene attivato soltanto quel player; gli altri restano miniature finché non vengono selezionati.
 

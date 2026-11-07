@@ -18,7 +18,6 @@
   var youtubeBusy = false;
   var youtubeQueued = null;
   var youtubeObserver = null;
-  var pendingYoutubeEmbed = null;
 
   function ready(fn) {
     if (document.readyState === 'loading') {
@@ -604,7 +603,6 @@
         media.className = 'jck-cf-youtube__media';
         card.insertBefore(media, card.firstChild);
       }
-      media.setAttribute('data-jck-manual', '1');
       if (!media.hasAttribute('data-jck-youtube')) { renderYoutubePlaceholder(media, videoId, cfYoutubeTitle(card)); }
       else { refreshYoutubeActions(media); }
     });
@@ -671,6 +669,11 @@
         renderYoutubePlaceholder(host, videoId);
       });
       enhanceCfYoutubeCards(rootNode || document);
+      if (currentCategories().embeds) {
+        hosts.forEach(function (host) {
+          loadYoutubeIfAllowed(host);
+        });
+      }
     } catch (e) {
       log('JoomCookies: YouTube enhance skipped', e);
     } finally {
@@ -737,9 +740,6 @@
     }
     var category = node.getAttribute('data-jck-category') || 'embeds';
     if (!currentCategories()[category]) {
-      if (isYoutubeEmbed(node)) {
-        pendingYoutubeEmbed = node;
-      }
       openPreferences(category);
       return;
     }
@@ -762,7 +762,7 @@
     var nodes = onlyNode ? [onlyNode] : document.querySelectorAll('[data-jck-embed="1"]');
     nodes.forEach(function (node) {
       var category = node.getAttribute('data-jck-category') || 'embeds';
-      if (!categories[category] || node.getAttribute('data-jck-manual') === '1' || isYoutubeEmbed(node)) {
+      if (!categories[category]) {
         return;
       }
       loadEmbed(node);
@@ -828,14 +828,9 @@
       }
     }
 
-    var requestedYoutubeEmbed = pendingYoutubeEmbed;
-    pendingYoutubeEmbed = null;
     activateScripts(categories);
     enhanceYoutubePlayers(document);
     activateEmbeds(categories);
-    if (requestedYoutubeEmbed && categories.embeds && requestedYoutubeEmbed.isConnected) {
-      loadEmbed(requestedYoutubeEmbed);
-    }
     syncConsentHints(categories);
     debugSnapshot('consent-applied');
     closeDialogs(false);
